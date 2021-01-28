@@ -218,27 +218,45 @@ open class FTPFileProvider: NSObject, FileProviderBasicRemote, FileProviderOpera
      */
     public var serverTrustPolicy: ServerTrustPolicy = .performDefaultEvaluation(validateHost: true)
     
-    open func contentsOfDirectory(path: String, completionHandler: @escaping ([FileObject], Error?) -> Void) {
-        self.contentsOfDirectory(path: path, rfc3659enabled: supportsRFC3659, completionHandler: completionHandler)
+    /**
+     디렉토리 목록 생성후 반환
+     - Progress를 반환하도록 수정 처리
+     */
+    open func contentsOfDirectory(path: String, completionHandler: @escaping ([FileObject], Error?) -> Void) -> Progress? {
+        return self.contentsOfDirectory(path: path, rfc3659enabled: supportsRFC3659, completionHandler: completionHandler)
     }
     
     /**
      Returns an Array of `FileObject`s identifying the the directory entries via asynchronous completion handler.
      
      If the directory contains no entries or an error is occured, this method will return the empty array.
-     
+
+     - Progress를 반환하도록 수정 처리
+
      - Parameter path: path to target directory. If empty, root will be iterated.
      - Parameter rfc3659enabled: uses MLST command instead of old LIST to get files attributes, default is `true`.
      - Parameter completionHandler: a closure with result of directory entries or error.
      - Parameter contents: An array of `FileObject` identifying the the directory entries.
      - Parameter error: Error returned by system.
      */
-    open func contentsOfDirectory(path apath: String, rfc3659enabled: Bool , completionHandler: @escaping (_ contents: [FileObject], _ error: Error?) -> Void) {
+    open func contentsOfDirectory(path apath: String, rfc3659enabled: Bool , completionHandler: @escaping (_ contents: [FileObject], _ error: Error?) -> Void) -> Progress? {
         let path = ftpPath(apath)
         
+        let operation = FileOperationType.fetch(path: apath)
+        guard fileOperationDelegate?.fileProvider(self, shouldDoOperation: operation) ?? true == true else {
+            return nil
+        }
+        let progress = Progress(totalUnitCount: 1)
+        progress.setUserInfoObject(operation, forKey: .fileProvderOperationTypeKey)
+        progress.kind = .file
+        progress.setUserInfoObject(Progress.FileOperationKind.downloading, forKey: .fileOperationKindKey)
+
         let task = session.fpstreamTask(withHostName: baseURL!.host!, port: baseURL!.port!)
         task.serverTrustPolicy = serverTrustPolicy
         task.taskDescription = FileOperationType.fetch(path: path).json
+        progress.cancellationHandler = {
+            task.cancel()
+        }
         self.ftpLogin(task) { (error) in
             if let error = error {
                 self.dispatch_queue.async {
@@ -247,18 +265,29 @@ open class FTPFileProvider: NSObject, FileProviderBasicRemote, FileProviderOpera
                 return
             }
             
-            self.ftpList(task, of: self.ftpPath(path), useMLST: rfc3659enabled, completionHandler: { (contents, error) in
+            self.ftpList(task, of: self.ftpPath(path), useMLST: rfc3659enabled, completionHandler: { [weak self] task (contents, error) in
+                
+                weak var weakTask = task
+                progress.cancellationHandler = {
+                    weakTask?.cancel()
+                }
+                progress.setUserInfoObject(Date(), forKey: .startingTimeKey)
+
                 defer {
+                    progress.completedUnitCount += 1
+                    self.delegateNotify(operation, progress: progress.fractionCompleted)
                     self.ftpQuit(task)
                 }
                 if let error = error {
                     if let uerror = error as? URLError, uerror.code == .unsupportedURL {
                         self.contentsOfDirectory(path: path, rfc3659enabled: false, completionHandler: completionHandler)
+                        self.delegateNotify(operation, error: error)
                         return
                     }
                     
                     self.dispatch_queue.async {
                         completionHandler([], error)
+                        self.delegateNotify(operation, error: error)
                     }
                     return
                 }
@@ -270,6 +299,7 @@ open class FTPFileProvider: NSObject, FileProviderBasicRemote, FileProviderOpera
                 
                 self.dispatch_queue.async {
                     completionHandler(files, nil)
+                    self.delegateNotify(operation, error: nil)
                 }
             })
         }
