@@ -284,13 +284,17 @@ internal extension FileProviderBasicRemote {
     func runDataTask(with request: URLRequest, operation: FileOperationType? = nil, completionHandler: @escaping (Data?, URLResponse?, Error?) -> Swift.Void) {
         let useCache = self.useCache
         let validatingCache = self.validatingCache
-        dispatch_queue.async {
+        dispatch_queue.async { [weak self] in
+            guard let strongSelf = self else {
+                completionHandler(nil, nil, NSError.init(domain: "FileProviderError", code: 0, userInfo: nil))
+                return
+            }
             if useCache {
-                if self.returnCachedDate(with: request, validatingCache: validatingCache, completionHandler: completionHandler) {
+                if strongSelf.returnCachedDate(with: request, validatingCache: validatingCache, completionHandler: completionHandler) {
                     return
                 }
             }
-            let task = self.session.dataTask(with: request, completionHandler: completionHandler)
+            let task = strongSelf.session.dataTask(with: request, completionHandler: completionHandler)
             task.taskDescription = operation?.json
             task.resume()
         }

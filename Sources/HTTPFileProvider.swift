@@ -482,7 +482,7 @@ open class HTTPFileProvider: NSObject, FileProviderBasicRemote, FileProviderOper
                 
                 let files = previousResult + newFiles
                 if let newToken = newToken, !progress.isCancelled {
-                    _ = self.paginated(path, startToken: newToken, currentProgress: progress, previousResult: files, requestHandler: requestHandler, pageHandler: pageHandler, completionHandler: completionHandler)
+                    self.paginated(path, startToken: newToken, currentProgress: progress, previousResult: files, requestHandler: requestHandler, pageHandler: pageHandler, completionHandler: completionHandler)
                 } else {
                     completionHandler(files, nil)
                 }

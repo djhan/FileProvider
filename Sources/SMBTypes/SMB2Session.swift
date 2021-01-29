@@ -36,7 +36,10 @@ extension SMB2 {
             var dialectData = Data()
             for dialect in dialects {
                 var dialect = dialect
-                dialectData.append(UnsafeBufferPointer(start: &dialect, count: 2))
+                //dialectData.append(UnsafeBufferPointer(start: &dialect, count: 2))
+                withUnsafePointer(to: &dialect) { (unsafeDialectPointer) -> Void in
+                    dialectData.append(UnsafeBufferPointer(start: unsafeDialectPointer, count: 2))
+                }
             }
             let pad = ((1024 - dialectData.count) % 8)
             dialectData.count += pad

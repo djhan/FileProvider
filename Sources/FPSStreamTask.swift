@@ -547,11 +547,15 @@ public class FileProviderStreamTask: URLSessionTask, StreamDelegate {
         self.dataToBeSent.append(data)
         self.dataToBeSentLock.unlock()
         
-        dispatch_queue.async {
-            let result = self.write(timeout: timeout, close: false)
+        dispatch_queue.async { [weak self] in
+            guard let strongSelf = self else {
+                // 에러 처리
+                return completionHandler(FileProviderFTPError.unknownError())
+            }
+            let result = strongSelf.write(timeout: timeout, close: false)
             if result < 0 {
-                let error = self.outputStream?.streamError ??
-                    URLError((self.state == .canceling || self.state == .completed) ? .cancelled : .cannotWriteToFile)
+                let error = strongSelf.outputStream?.streamError ??
+                    URLError((strongSelf.state == .canceling || strongSelf.state == .completed) ? .cancelled : .cannotWriteToFile)
                 completionHandler(error)
             } else {
                 completionHandler(nil)
@@ -574,12 +578,15 @@ public class FileProviderStreamTask: URLSessionTask, StreamDelegate {
         guard let outputStream = outputStream, let inputStream = inputStream else {
             return
         }
-        dispatch_queue.async {
-            _=self.write(close: false)
+        dispatch_queue.async { [weak self] in
+            guard let strongSelf = self else {
+                return
+            }
+            _ = strongSelf.write(close: false)
             while outputStream.streamStatus == .writing {
                 Thread.sleep(forTimeInterval: 0.1)
             }
-            self.streamDelegate?.urlSession?(self._underlyingSession, streamTask: self, didBecome: inputStream, outputStream: outputStream)
+            strongSelf.streamDelegate?.urlSession?(strongSelf._underlyingSession, streamTask: strongSelf, didBecome: inputStream, outputStream: outputStream)
         }
     }
     
@@ -601,8 +608,11 @@ public class FileProviderStreamTask: URLSessionTask, StreamDelegate {
             }
         }
         
-        dispatch_queue.async {
-            _ = self.write(close: true)
+        dispatch_queue.async { [weak self] in
+            guard let strongSelf = self else {
+                return
+            }
+            _ = strongSelf.write(close: true)
         }
     }
     
@@ -639,14 +649,17 @@ public class FileProviderStreamTask: URLSessionTask, StreamDelegate {
         guard let inputStream = inputStream else {
             return
         }
-        dispatch_queue.async {
+        dispatch_queue.async { [weak self] in
+            guard let strongSelf = self else {
+                return
+            }
             if !immediate {
                 while inputStream.streamStatus != .atEnd {
                     Thread.sleep(forTimeInterval: 0.1)
                 }
             }
             inputStream.close()
-            self.streamDelegate?.urlSession?(self._underlyingSession, readClosedFor: self)
+            strongSelf.streamDelegate?.urlSession?(strongSelf._underlyingSession, readClosedFor: strongSelf)
         }
     }
     
@@ -674,19 +687,30 @@ public class FileProviderStreamTask: URLSessionTask, StreamDelegate {
             
             inputStream.setSSLPeerID(peerID: peerID, peerIDLen: peerIDLen)
             
-            dispatch_queue.async {
-                inputStream.setProperty(self.securityLevel.rawValue, forKey: .socketSecurityLevelKey)
-                outputStream.setProperty(self.securityLevel.rawValue, forKey: .socketSecurityLevelKey)
+            dispatch_queue.async { [weak self] in
+                guard let strongSelf = self else {
+                    return
+                }
+                inputStream.setProperty(strongSelf.securityLevel.rawValue, forKey: .socketSecurityLevelKey)
+                outputStream.setProperty(strongSelf.securityLevel.rawValue, forKey: .socketSecurityLevelKey)
             }
             
             var sslSessionState: SSLSessionState = .idle
             if let sslContext = inputStream.property(forKey: kCFStreamPropertySSLContext as Stream.PropertyKey) {
-                while SSLGetSessionState(sslContext as! SSLContext, UnsafeMutablePointer(&sslSessionState)) == errSSLWouldBlock ||
-                    sslSessionState == .idle || sslSessionState == .handshake {
+                withUnsafeMutablePointer(to: &sslSessionState) { (sslSessionStateMutablePointer) -> Void in
+                    var internalState = sslSessionStateMutablePointer.pointee
+                    while SSLGetSessionState(sslContext as! SSLContext, sslSessionStateMutablePointer) == errSSLWouldBlock {
+                        // state를 업데이트후 확인
+                        internalState = sslSessionStateMutablePointer.pointee
+                        guard (internalState == .idle || internalState == .handshake) == true else {
+                            break
+                        }
+                        
                         guard inputStream.streamError == nil, outputStream.streamError == nil else {
                             break
                         }
                         Thread.sleep(forTimeInterval: 0.1)
+                    }
                 }
             }
         }
@@ -704,8 +728,11 @@ public class FileProviderStreamTask: URLSessionTask, StreamDelegate {
         }
         
         isSecure = false
-        dispatch_queue.async {
-            if let inputStream = self.inputStream, let outputStream = self.outputStream,
+        dispatch_queue.async { [weak self] in
+            guard let strongSelf = self else {
+                return
+            }
+            if let inputStream = strongSelf.inputStream, let outputStream = strongSelf.outputStream,
                 inputStream.property(forKey: .socketSecurityLevelKey) as? String != StreamSocketSecurityLevel.none.rawValue {
                 
                 inputStream.setProperty(StreamSocketSecurityLevel.none.rawValue, forKey: .socketSecurityLevelKey)
@@ -770,12 +797,17 @@ extension Stream {
     public func getSSLPeerID() -> (peerID: UnsafeRawPointer?, peerIDLen: Int) {
         var peerID: UnsafeRawPointer? = nil
         var peerIDLen: Int = 0
-        
-        if let sslContext = self.property(forKey: kCFStreamPropertySSLContext as Stream.PropertyKey) {
-            let _ = SSLGetPeerID(sslContext as! SSLContext, UnsafeMutablePointer(&peerID), UnsafeMutablePointer(&peerIDLen))
+
+        guard let sslContext = self.property(forKey: kCFStreamPropertySSLContext as Stream.PropertyKey) else {
+            return (peerID, peerIDLen)
         }
-        
-        return (peerID, peerIDLen)
+
+        return withUnsafeMutablePointer(to: &peerID) { (peerIdPointer) -> (UnsafeRawPointer?, Int) in
+            return withUnsafeMutablePointer(to: &peerIDLen) { (peerIdLenPointer) -> (UnsafeRawPointer?, Int) in
+                let _ = SSLGetPeerID(sslContext as! SSLContext, peerIdPointer, peerIdLenPointer)
+                return (peerIdPointer.pointee, peerIdLenPointer.pointee)
+            }
+        }
     }
     
     /**

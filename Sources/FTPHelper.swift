@@ -14,7 +14,10 @@ internal extension FTPFileProvider {
                  completionHandler: @escaping (_ response: String?, _ error: Error?) -> Void) {
         let timeout = session.configuration.timeoutIntervalForRequest
         let terminalcommand = command + "\r\n"
-        task.write(terminalcommand.data(using: .utf8)!, timeout: timeout) { (error) in
+        task.write(terminalcommand.data(using: .utf8)!, timeout: timeout) { [weak self] (error) in
+            guard let strongSelf = self else {
+                return completionHandler(nil, FileProviderFTPError.unknownError())
+            }
             if let error = error {
                 completionHandler(nil, error)
                 return
@@ -24,7 +27,7 @@ internal extension FTPFileProvider {
                 task.resume()
             }
             
-            self.readData(on: task, minLength: minLength, maxLength: 4096, timeout: timeout, afterSend: afterSend, completionHandler: completionHandler)
+            strongSelf.readData(on: task, minLength: minLength, maxLength: 4096, timeout: timeout, afterSend: afterSend, completionHandler: completionHandler)
         }
     }
     
@@ -32,7 +35,10 @@ internal extension FTPFileProvider {
                   minLength: Int = 4, maxLength: Int = 4096, timeout: TimeInterval,
                   afterSend: ((_ error: Error?) -> Void)? = nil,
                   completionHandler: @escaping (_ response: String?, _ error: Error?) -> Void) {
-        task.readData(ofMinLength: minLength, maxLength: maxLength, timeout: timeout) { (data, eof, error) in
+        task.readData(ofMinLength: minLength, maxLength: maxLength, timeout: timeout) { [weak self] (data, eof, error) in
+            guard let strongSelf = self else {
+                return completionHandler(nil, FileProviderFTPError.unknownError())
+            }
             if let error = error {
                 completionHandler(nil, error)
                 return
@@ -42,8 +48,8 @@ internal extension FTPFileProvider {
                 let lines = response.components(separatedBy: "\n").compactMap { $0.isEmpty ? nil : $0.trimmingCharacters(in: .whitespacesAndNewlines) }
                 if let last = lines.last, last.hasPrefix("1") {
                     // 1XX: Need to wait for some other response
-                    let timeout = self.session.configuration.timeoutIntervalForResource
-                    self.readData(on: task, minLength: minLength, maxLength: maxLength, timeout: timeout, afterSend: afterSend, completionHandler: completionHandler)
+                    let timeout = strongSelf.session.configuration.timeoutIntervalForResource
+                    strongSelf.readData(on: task, minLength: minLength, maxLength: maxLength, timeout: timeout, afterSend: afterSend, completionHandler: completionHandler)
                     
                     // Call afterSend
                     afterSend?(error)
@@ -51,20 +57,23 @@ internal extension FTPFileProvider {
                 }
                 completionHandler(response.trimmingCharacters(in: .whitespacesAndNewlines), nil)
             } else {
-                completionHandler(nil, URLError(.cannotParseResponse, url: self.url(of: "")))
+                completionHandler(nil, URLError(.cannotParseResponse, url: strongSelf.url(of: "")))
             }
         }
     }
     
     func ftpUserPass(_ task: FileProviderStreamTask, completionHandler: @escaping (_ error: Error?) -> Void) {
-        self.execute(command: "USER \(credential?.user ?? "anonymous")", on: task) { (response, error) in
+        self.execute(command: "USER \(credential?.user ?? "anonymous")", on: task) { [weak self] (response, error) in
+            guard let strongSelf = self else {
+                return completionHandler(FileProviderFTPError.unknownError())
+            }
             if let error = error {
                 completionHandler(error)
                 return
             }
             
             guard let response = response else {
-                completionHandler(URLError(.badServerResponse, url: self.url(of: "")))
+                completionHandler(URLError(.badServerResponse, url: strongSelf.url(of: "")))
                 return
             }
             
@@ -76,11 +85,15 @@ internal extension FTPFileProvider {
             
             // needs password
             if response.trimmingCharacters(in: .whitespacesAndNewlines).hasPrefix("33") {
-                self.execute(command: "PASS \(self.credential?.password ?? "fileprovider@")", on: task) { (response, error) in
+                strongSelf.execute(command: "PASS \(strongSelf.credential?.password ?? "fileprovider@")", on: task) { [weak self] (response, error) in
+                    guard let strongSelf = self else {
+                        return completionHandler(FileProviderFTPError.unknownError())
+                    }
+
                     if response?.hasPrefix("23") ?? false {
                         completionHandler(nil)
                     } else {
-                        let error: Error = response.flatMap(FileProviderFTPError.init(message:)) ?? URLError(.userAuthenticationRequired, url: self.url(of: ""))
+                        let error: Error = response.flatMap(FileProviderFTPError.init(message:)) ?? URLError(.userAuthenticationRequired, url: strongSelf.url(of: ""))
                         completionHandler(error)
                     }
                 }
@@ -93,14 +106,17 @@ internal extension FTPFileProvider {
     }
     
     fileprivate func ftpEstablishSecureDataConnection(_ task: FileProviderStreamTask, completionHandler: @escaping (_ error: Error?) -> Void) {
-        self.execute(command: "PBSZ 0", on: task, completionHandler: { (response, error) in
+        self.execute(command: "PBSZ 0", on: task, completionHandler: { [weak self] (response, error) in
+            guard let strongSelf = self else {
+                return completionHandler(FileProviderFTPError.unknownError())
+            }
             if let error = error {
                 completionHandler(error)
                 return
             }
             
-            let prot = self.securedDataConnection ? "PROT P" : "PROT C"
-            self.execute(command: prot, on: task, completionHandler: { (response, error) in
+            let prot = strongSelf.securedDataConnection ? "PROT P" : "PROT C"
+            strongSelf.execute(command: prot, on: task, completionHandler: { (response, error) in
                 if let error = error {
                     completionHandler(error)
                     return
@@ -124,14 +140,18 @@ internal extension FTPFileProvider {
             task.resume()
         }
         
-        task.readData(ofMinLength: 4, maxLength: 2048, timeout: timeout) { (data, eof, error) in
+        task.readData(ofMinLength: 4, maxLength: 2048, timeout: timeout) { [weak self] (data, eof, error) in
+            guard let strongSelf = self else {
+                return completionHandler(FileProviderFTPError.unknownError())
+            }
+
             do {
                 if let error = error {
                     throw error
                 }
                 
                 guard let data = data, let response = String(data: data, encoding: .utf8) else {
-                    throw URLError(.cannotParseResponse, url: self.url(of: ""))
+                    throw URLError(.cannotParseResponse, url: strongSelf.url(of: ""))
                 }
                 
                 guard response.trimmingCharacters(in: .whitespacesAndNewlines).hasPrefix("22") else {
@@ -142,9 +162,13 @@ internal extension FTPFileProvider {
                 return
             }
             
-            if !isSecure && self.baseURL?.scheme == "ftpes" {
+            if !isSecure && strongSelf.baseURL?.scheme == "ftpes" {
                 // Explicit FTP Connection, by upgrading connection to FTP/SSL
-                self.execute(command: "AUTH TLS", on: task, completionHandler: { (response, error) in
+                strongSelf.execute(command: "AUTH TLS", on: task, completionHandler: { [weak self] (response, error) in
+                    guard let strongSelf = self else {
+                        return completionHandler(FileProviderFTPError.unknownError())
+                    }
+
                     if let error = error {
                         completionHandler(error)
                         return
@@ -153,27 +177,27 @@ internal extension FTPFileProvider {
                     if let response = response, response.hasPrefix("23") {
                         task.startSecureConnection()
                         isSecure = true
-                        self.ftpEstablishSecureDataConnection(task) { error in
+                        strongSelf.ftpEstablishSecureDataConnection(task) { [weak self] (error) in
                             if let error = error {
                                 completionHandler(error)
                                 return
                             }
                             
-                            self.ftpUserPass(task, completionHandler: completionHandler)
+                            self?.ftpUserPass(task, completionHandler: completionHandler)
                         }
                     }
                 })
             } else if isSecure {
-                self.ftpEstablishSecureDataConnection(task) { error in
+                strongSelf.ftpEstablishSecureDataConnection(task) { [weak self] (error) in
                     if let error = error {
                         completionHandler(error)
                         return
                     }
                     
-                    self.ftpUserPass(task, completionHandler: completionHandler)
+                    self?.ftpUserPass(task, completionHandler: completionHandler)
                 }
             } else {
-                self.ftpUserPass(task, completionHandler: completionHandler)
+                strongSelf.ftpUserPass(task, completionHandler: completionHandler)
             }
         }
     }
@@ -183,19 +207,23 @@ internal extension FTPFileProvider {
             return s.components(separatedBy: CharacterSet.decimalDigits.inverted).joined()
         }
         
-        self.execute(command: "PASV", on: task) { (response, error) in
+        self.execute(command: "PASV", on: task) { [weak self] (response, error) in
+            guard let strongSelf = self else {
+                return completionHandler(nil, FileProviderFTPError.unknownError())
+            }
+
             do {
                 if let error = error {
                     throw error
                 }
                 
                 guard let response = response, let destString = response.trimmingCharacters(in: .whitespacesAndNewlines).components(separatedBy: " ").last else {
-                    throw URLError(.badServerResponse, url: self.url(of: ""))
+                    throw URLError(.badServerResponse, url: strongSelf.url(of: ""))
                 }
                 
                 let destArray = destString.components(separatedBy: ",").compactMap({ UInt32(trimmedNumber($0)) })
                 guard destArray.count == 6 else {
-                    throw URLError(.badServerResponse, url: self.url(of: ""))
+                    throw URLError(.badServerResponse, url: strongSelf.url(of: ""))
                 }
                 
                 // first 4 elements are ip, 2 next are port, as byte
@@ -205,11 +233,11 @@ internal extension FTPFileProvider {
                 let port = portHi + portLo
                 // IPv6 workaround
                 if host == "127.555.555.555" {
-                    host = self.baseURL!.host!
+                    host = strongSelf.baseURL!.host!
                 }
                 
-                let passiveTask = self.session.fpstreamTask(withHostName: host, port: port)
-                if self.baseURL?.scheme == "ftps" || self.baseURL?.scheme == "ftpes" || self.baseURL?.port == 990 {
+                let passiveTask = strongSelf.session.fpstreamTask(withHostName: host, port: port)
+                if strongSelf.baseURL?.scheme == "ftps" || strongSelf.baseURL?.scheme == "ftpes" || strongSelf.baseURL?.port == 990 {
                     passiveTask.serverTrustPolicy = task.serverTrustPolicy
                     passiveTask.reuseSSLSession(task: task)
                     passiveTask.startSecureConnection()
@@ -230,32 +258,36 @@ internal extension FTPFileProvider {
             return s.components(separatedBy: CharacterSet.decimalDigits.inverted).joined()
         }
         
-        self.execute(command: "EPSV", on: task) { (response, error) in
+        self.execute(command: "EPSV", on: task) { [weak self] (response, error) in
+            guard let strongSelf = self else {
+                return completionHandler(nil, FileProviderFTPError.unknownError())
+            }
+
             do {
                 if let error = error {
                     throw error
                 }
                 
                 guard let response = response, let destString = response.trimmingCharacters(in: .whitespacesAndNewlines).components(separatedBy: " ").last else {
-                    throw URLError(.badServerResponse, url: self.url(of: ""))
+                    throw URLError(.badServerResponse, url: strongSelf.url(of: ""))
                 }
                 
                 if response.trimmingCharacters(in: .whitespaces).hasPrefix("50") {
-                    self.ftpPassive(task, completionHandler: completionHandler)
+                    strongSelf.ftpPassive(task, completionHandler: completionHandler)
                     return
                 }
                 
                 let destArray = destString.components(separatedBy: "|")
                 guard destArray.count >= 4, let port = Int(trimmedNumber(destArray[3])) else {
-                    throw URLError(.badServerResponse, url: self.url(of: ""))
+                    throw URLError(.badServerResponse, url: strongSelf.url(of: ""))
                 }
                 var host = destArray[2]
                 if host.isEmpty {
-                    host = self.baseURL?.host ?? ""
+                    host = strongSelf.baseURL?.host ?? ""
                 }
                 
-                let passiveTask = self.session.fpstreamTask(withHostName: host, port: port)
-                if self.baseURL?.scheme == "ftps" || self.baseURL?.scheme == "ftpes" || self.baseURL?.port == 990 {
+                let passiveTask = strongSelf.session.fpstreamTask(withHostName: host, port: port)
+                if strongSelf.baseURL?.scheme == "ftps" || strongSelf.baseURL?.scheme == "ftpes" || strongSelf.baseURL?.port == 990 {
                     passiveTask.serverTrustPolicy = task.serverTrustPolicy
                     passiveTask.reuseSSLSession(task: task)
                     passiveTask.startSecureConnection()
@@ -285,18 +317,22 @@ internal extension FTPFileProvider {
         }
         activeTask.resume()
         
-        self.execute(command: "PORT \(service.port)", on: task) { (response, error) in
+        self.execute(command: "PORT \(service.port)", on: task) { [weak self] (response, error) in
+            guard let strongSelf = self else {
+                return completionHandler(nil, FileProviderFTPError.unknownError())
+            }
+
             do {
                 if let error = error {
                     throw error
                 }
                 
                 guard let response = response else {
-                    throw URLError(.badServerResponse, url: self.url(of: ""))
+                    throw URLError(.badServerResponse, url: strongSelf.url(of: ""))
                 }
                 
                 guard !response.hasPrefix("5") else {
-                    throw URLError(.cannotConnectToHost, url: self.url(of: ""))
+                    throw URLError(.cannotConnectToHost, url: strongSelf.url(of: ""))
                 }
                 
                 completionHandler(activeTask, nil)
@@ -328,7 +364,11 @@ internal extension FTPFileProvider {
     
     func ftpList(_ task: FileProviderStreamTask, of path: String, useMLST: Bool,
                  completionHandler: @escaping (_ contents: [String], _ error: Error?) -> Void) {
-        self.ftpDataConnect(task) { (dataTask, error) in
+        self.ftpDataConnect(task) { [weak self] (dataTask, error) in
+            
+            guard let strongSelf = self else {
+                return completionHandler([], FileProviderFTPError.unknownError())
+            }
 
             if let error = error {
                 completionHandler([], error)
@@ -336,30 +376,34 @@ internal extension FTPFileProvider {
             }
             
             guard let dataTask = dataTask else {
-                completionHandler([], URLError(.badServerResponse, url: self.url(of: path)))
+                completionHandler([], URLError(.badServerResponse, url: strongSelf.url(of: path)))
                 return
             }
             
             let success_lock = NSLock()
             var success = false
             let command = useMLST ? "MLSD \(path)" : "LIST \(path)"
-            self.execute(command: command, on: task) { (response, error) in
+            strongSelf.execute(command: command, on: task) { [weak self] (response, error) in
+                guard let strongSelf = self else {
+                    return completionHandler([], FileProviderFTPError.unknownError())
+                }
+
                 do {
                     if let error = error {
                         throw error
                     }
                     
                     guard let response = response else {
-                        throw URLError(.cannotParseResponse, url: self.url(of: path))
+                        throw URLError(.cannotParseResponse, url: strongSelf.url(of: path))
                     }
                     
                     if response.hasPrefix("500") && useMLST {
                         dataTask.cancel()
-                        self.supportsRFC3659 = false
-                        throw URLError(.unsupportedURL, url: self.url(of: path))
+                        strongSelf.supportsRFC3659 = false
+                        throw URLError(.unsupportedURL, url: strongSelf.url(of: path))
                     }
                     
-                    let timeout = self.session.configuration.timeoutIntervalForRequest
+                    let timeout = strongSelf.session.configuration.timeoutIntervalForRequest
                     var finalData = Data()
                     var eof = false
                     let error_lock = NSLock()
@@ -391,12 +435,12 @@ internal extension FTPFileProvider {
                         error_lock.unlock()
                         
                         if waitResult == .timedOut {
-                            throw URLError(.timedOut, url: self.url(of: path))
+                            throw URLError(.timedOut, url: strongSelf.url(of: path))
                         }
                     }
                     
                     guard let dataResponse = String(data: finalData, encoding: .utf8) else {
-                        throw URLError(.badServerResponse, url: self.url(of: path))
+                        throw URLError(.badServerResponse, url: strongSelf.url(of: path))
                     }
                     
                     let contents: [String] = dataResponse.components(separatedBy: "\n")
@@ -414,7 +458,7 @@ internal extension FTPFileProvider {
                         success_lock.unlock()
                     }
                 } catch {
-                    self.dispatch_queue.async {
+                    strongSelf.dispatch_queue.async {
                         completionHandler([], error)
                     }
                 }
@@ -431,7 +475,11 @@ internal extension FTPFileProvider {
             var result = [FileObject]()
             var errorInfo:Error?
             group.enter()
-            self.contentsOfDirectory(path: path, completionHandler: { (files, error) in
+            self.contentsOfDirectory(path: path, completionHandler: { [weak self] (files, error) in
+                guard let strongSelf = self else {
+                    return completionHandler([], FileProviderFTPError.unknownError())
+                }
+
                 if let error = error {
                     errorInfo = error
                     group.leave()
@@ -446,8 +494,7 @@ internal extension FTPFileProvider {
                 progress.becomeCurrent(withPendingUnitCount: Int64(directories.count))
                 for dir in directories {
                     group.enter()
-                    _=self.recursiveList(path: dir.path, useMLST: useMLST, foundItemsHandler: foundItemsHandler) {
-                        (contents, error) in
+                    _ = strongSelf.recursiveList(path: dir.path, useMLST: useMLST, foundItemsHandler: foundItemsHandler) { (contents, error) in
                         if let error = error {
                             errorInfo = error
                             group.leave()
@@ -484,19 +531,29 @@ internal extension FTPFileProvider {
         self.attributesOfItem(path: filePath) { (file, error) in
             let totalSize = file?.size ?? -1
             // Retreive data from server
-            self.ftpDataConnect(task) { (dataTask, error) in
+            self.ftpDataConnect(task) { [weak self] (dataTask, error) in
+                guard let strongSelf = self else {
+                    completionHandler?(FileProviderFTPError.unknownError())
+                    return
+                }
+
                 if let error = error {
                     completionHandler?(error)
                     return
                 }
                 
                 guard let dataTask = dataTask else {
-                    completionHandler?(URLError(.badServerResponse, url: self.url(of: filePath)))
+                    completionHandler?(URLError(.badServerResponse, url: strongSelf.url(of: filePath)))
                     return
                 }
                 
                 // Send retreive command
-                self.execute(command: "TYPE I" + "\r\n" + "REST \(position)" + "\r\n" + "RETR \(filePath)", on: task) { (response, error) in
+                strongSelf.execute(command: "TYPE I" + "\r\n" + "REST \(position)" + "\r\n" + "RETR \(filePath)", on: task) { [weak self] (response, error) in
+                    guard let strongSelf = self else {
+                        completionHandler?(FileProviderFTPError.unknownError())
+                        return
+                    }
+
                     // starting passive task
                     onTask?(dataTask)
                     
@@ -509,7 +566,7 @@ internal extension FTPFileProvider {
                         stream.open()
                     }
                     
-                    let timeout = self.session.configuration.timeoutIntervalForRequest
+                    let timeout = strongSelf.session.configuration.timeoutIntervalForRequest
                     var totalReceived: Int64 = 0
                     var eof = false
                     let error_lock = NSLock()
@@ -517,7 +574,12 @@ internal extension FTPFileProvider {
                     while !eof {
                         let group = DispatchGroup()
                         group.enter()
-                        dataTask.readData(ofMinLength: 1, maxLength: Int.max, timeout: timeout) { (data, segeof, segerror) in
+                        dataTask.readData(ofMinLength: 1, maxLength: Int.max, timeout: timeout) { [weak self] (data, segeof, segerror) in
+                            guard let strongSelf = self else {
+                                completionHandler?(FileProviderFTPError.unknownError())
+                                return
+                            }
+
                             defer {
                                 group.leave()
                             }
@@ -536,7 +598,7 @@ internal extension FTPFileProvider {
                                 let result = (try? stream.write(data: data)) ?? -1
                                 if result < 0 {
                                     error_lock.lock()
-                                    error = stream.streamError ?? URLError(.cannotWriteToFile, url: self.url(of: filePath))
+                                    error = stream.streamError ?? URLError(.cannotWriteToFile, url: strongSelf.url(of: filePath))
                                     error_lock.unlock()
                                     eof = true
                                     return
@@ -556,7 +618,7 @@ internal extension FTPFileProvider {
                         error_lock.unlock()
                         
                         if waitResult == .timedOut {
-                            completionHandler?(URLError(.timedOut, url: self.url(of: filePath)))
+                            completionHandler?(URLError(.timedOut, url: strongSelf.url(of: filePath)))
                             return
                         }
                     }
@@ -569,14 +631,14 @@ internal extension FTPFileProvider {
                         }
                         
                         guard let response = response else {
-                            throw URLError(.cannotParseResponse, url: self.url(of: filePath))
+                            throw URLError(.cannotParseResponse, url: strongSelf.url(of: filePath))
                         }
                         
                         if !(response.hasPrefix("1") || response.hasPrefix("2")) {
                             throw FileProviderFTPError(message: response)
                         }
                     } catch {
-                        self.dispatch_queue.async {
+                        strongSelf.dispatch_queue.async {
                             completionHandler?(error)
                         }
                     }
@@ -601,7 +663,11 @@ internal extension FTPFileProvider {
         let stream = OutputStream.toMemory()
         self.ftpRetrieve(task, filePath: filePath, from: position, length: length, to: stream, onTask: onTask, onProgress: { (data, total, expected) in
             onProgress?(data, Int64(data.count), total, expected)
-        }) { (error) in
+        }) { [weak self] (error) in
+            guard let strongSelf = self else {
+                return completionHandler(nil, FileProviderFTPError.unknownError())
+            }
+
             if let error = error {
                 completionHandler(nil, error)
             }
@@ -611,11 +677,11 @@ internal extension FTPFileProvider {
                 return
             }
             
-            if let url = URL(string: filePath.addingPercentEncoding(withAllowedCharacters: .filePathAllowed) ?? filePath, relativeTo: self.baseURL!)?.absoluteURL {
+            if let url = URL(string: filePath.addingPercentEncoding(withAllowedCharacters: .filePathAllowed) ?? filePath, relativeTo: strongSelf.baseURL!)?.absoluteURL {
                 let urlresponse = URLResponse(url: url, mimeType: nil, expectedContentLength: finalData.count, textEncodingName: nil)
                 let cachedResponse = CachedURLResponse(response: urlresponse, data: finalData)
                 let request = URLRequest(url: url)
-                self.cache?.storeCachedResponse(cachedResponse, for: request)
+                strongSelf.cache?.storeCachedResponse(cachedResponse, for: request)
             }
             completionHandler(finalData, nil)
         }
@@ -627,14 +693,19 @@ internal extension FTPFileProvider {
                      completionHandler: SimpleCompletionHandler) {
         // Check cache
         if useCache, let url = URL(string: filePath.addingPercentEncoding(withAllowedCharacters: .filePathAllowed) ?? filePath, relativeTo: self.baseURL!)?.absoluteURL, let cachedResponse = self.cache?.cachedResponse(for: URLRequest(url: url)), cachedResponse.data.count > 0 {
-            dispatch_queue.async {
+            dispatch_queue.async { [weak self] in
+                guard let strongSelf = self else {
+                    completionHandler?(FileProviderFTPError.unknownError())
+                    return
+                }
+
                 let data = cachedResponse.data
                 stream.open()
                 let result = (try? stream.write(data: data)) ?? -1
                 if result > 0 {
                     completionHandler?(nil)
                 } else {
-                    completionHandler?(stream.streamError ?? URLError(.cannotWriteToFile, url: self.url(of: filePath)))
+                    completionHandler?(stream.streamError ?? URLError(.cannotWriteToFile, url: strongSelf.url(of: filePath)))
                 }
                 stream.close()
             }
@@ -675,14 +746,18 @@ internal extension FTPFileProvider {
     func ftpStoreSerial(_ task: FileProviderStreamTask, filePath: String, from stream: InputStream, size: Int64,
                         onTask: ((_ task: FileProviderStreamTask) -> Void)?,
                         onProgress: ((_ bytesSent: Int64, _ totalSent: Int64, _ expectedBytes: Int64) -> Void)?, completionHandler: @escaping (_ error: Error?) -> Void) {
-        self.execute(command: "TYPE I", on: task) { (response, error) in
+        self.execute(command: "TYPE I", on: task) { [weak self] (response, error) in
+            guard let strongSelf = self else {
+                return completionHandler(FileProviderFTPError.unknownError())
+            }
+
             do {
                 if let error = error {
                     throw error
                 }
                 
                 guard let response = response else {
-                    throw URLError(.cannotParseResponse, url: self.url(of: filePath))
+                    throw URLError(.cannotParseResponse, url: strongSelf.url(of: filePath))
                 }
                 
                 if !response.hasPrefix("2") {
@@ -693,14 +768,18 @@ internal extension FTPFileProvider {
                 return
             }
             
-            self.ftpDataConnect(task) { (dataTask, error) in
+            strongSelf.ftpDataConnect(task) { [weak self] (dataTask, error) in
+                guard let strongSelf = self else {
+                    return completionHandler(FileProviderFTPError.unknownError())
+                }
+
                 if let error = error {
                     completionHandler(error)
                     return
                 }
                 
                 guard let dataTask = dataTask else {
-                    completionHandler(URLError(.badServerResponse, url: self.url(of: filePath)))
+                    completionHandler(URLError(.badServerResponse, url: strongSelf.url(of: filePath)))
                     return
                 }
                 let success_lock = NSLock()
@@ -719,13 +798,13 @@ internal extension FTPFileProvider {
                     completed_lock.unlock()
                 }
                 
-                self.execute(command: "STOR \(filePath)", on: task, afterSend: { error in
+                strongSelf.execute(command: "STOR \(filePath)", on: task, afterSend: { error in
                     onTask?(dataTask)
                     
-                    let timeout = self.session.configuration.timeoutIntervalForResource
+                    let timeout = strongSelf.session.configuration.timeoutIntervalForResource
                     var error: Error?
                     
-                    let chunkSize = self.optimizedChunkSize(size)
+                    let chunkSize = strongSelf.optimizedChunkSize(size)
                     let lock = NSLock()
                     var sent: Int64 = 0
                     
@@ -738,10 +817,10 @@ internal extension FTPFileProvider {
                         
                         lock.lock()
                         
-                        guard var subdata = try? stream.readData(ofLength: chunkSize) else {
+                        guard let subdata = try? stream.readData(ofLength: chunkSize) else {
                             lock.unlock()
                             completionOnce {
-                                completionHandler(stream.streamError ?? URLError(.requestBodyStreamExhausted, url: self.url(of: filePath)))
+                                completionHandler(stream.streamError ?? URLError(.requestBodyStreamExhausted, url: strongSelf.url(of: filePath)))
                             }
                             return
                         }
@@ -779,7 +858,7 @@ internal extension FTPFileProvider {
                         if waitResult == .timedOut {
                             lock.unlock()
                             completionOnce {
-                                completionHandler(URLError(.timedOut, url: self.url(of: filePath)))
+                                completionHandler(URLError(.timedOut, url: strongSelf.url(of: filePath)))
                             }
                             return
                         }
@@ -790,20 +869,24 @@ internal extension FTPFileProvider {
                     success = true
                     success_lock.unlock()
                     
-                    if self.securedDataConnection {
+                    if strongSelf.securedDataConnection {
                         dataTask.stopSecureConnection()
                     }
                     // TOFIX: Close read/write stream for receive a FTP response from the server
                     dataTask.closeRead(immediate: true)
                     dataTask.closeWrite()
-                }) { (response, error) in
+                }) { [weak self] (response, error) in
+                    guard let strongSelf = self else {
+                        return completionHandler(FileProviderFTPError.unknownError())
+                    }
+
                     do {
                         if let error = error {
                             throw error
                         }
                         
                         guard let response = response else {
-                            throw URLError(.cannotParseResponse, url: self.url(of: filePath))
+                            throw URLError(.cannotParseResponse, url: strongSelf.url(of: filePath))
                         }
                         
                         let lines = response.components(separatedBy: "\n").compactMap { $0.isEmpty ? nil : $0.trimmingCharacters(in: .whitespacesAndNewlines) }
@@ -826,7 +909,7 @@ internal extension FTPFileProvider {
                             return
                         } else {
                             success_lock.unlock()
-                            throw URLError(.cannotCreateFile, url: self.url(of: filePath))
+                            throw URLError(.cannotCreateFile, url: strongSelf.url(of: filePath))
                         }
                     } catch {
                         success_lock.lock()
@@ -897,14 +980,18 @@ internal extension FTPFileProvider {
     func ftpStore(_ task: FileProviderStreamTask, data: Data, to filePath: String, from position: Int64,
                   onTask: ((_ task: FileProviderStreamTask) -> Void)?,
                   completionHandler: @escaping (_ error: Error?) -> Void) {
-        self.execute(command: "TYPE I", on: task) { (response, error) in
+        self.execute(command: "TYPE I", on: task) { [weak self] (response, error) in
+            guard let strongSelf = self else {
+                return completionHandler(FileProviderFTPError.unknownError())
+            }
+
             do {
                 if let error = error {
                     throw error
                 }
                 
                 guard let response = response else {
-                    throw URLError(.cannotParseResponse, url: self.url(of: filePath))
+                    throw URLError(.cannotParseResponse, url: strongSelf.url(of: filePath))
                 }
                 
                 if !response.hasPrefix("2") {
@@ -915,14 +1002,18 @@ internal extension FTPFileProvider {
                 return
             }
             
-            self.execute(command: "REST \(position)", on: task, completionHandler: { (response, error) in
+            strongSelf.execute(command: "REST \(position)", on: task, completionHandler: { [weak self] (response, error) in
+                guard let strongSelf = self else {
+                    return completionHandler(FileProviderFTPError.unknownError())
+                }
+
                 do {
                     if let error = error {
                         throw error
                     }
                     
                     guard let response = response else {
-                        throw URLError(.cannotParseResponse, url: self.url(of: filePath))
+                        throw URLError(.cannotParseResponse, url: strongSelf.url(of: filePath))
                     }
                     
                     if !response.hasPrefix("35") {
@@ -933,23 +1024,31 @@ internal extension FTPFileProvider {
                     return
                 }
                 
-                self.ftpDataConnect(task) { (dataTask, error) in
+                strongSelf.ftpDataConnect(task) { [weak self] (dataTask, error) in
+                    guard let strongSelf = self else {
+                        return completionHandler(FileProviderFTPError.unknownError())
+                    }
+
                     if let error = error {
                         completionHandler(error)
                         return
                     }
                     
                     guard let dataTask = dataTask else {
-                        completionHandler(URLError(.badServerResponse, url: self.url(of: filePath)))
+                        completionHandler(URLError(.badServerResponse, url: strongSelf.url(of: filePath)))
                         return
                     }
                     
                     // Send retreive command
                     let success_lock = NSLock()
                     var success = false
-                    self.execute(command: "STOR \(filePath)", on: task, minLength: 44 + filePath.count + 4, afterSend: { error in
+                    strongSelf.execute(command: "STOR \(filePath)", on: task, minLength: 44 + filePath.count + 4, afterSend: { [weak self] (error) in
+                        guard let strongSelf = self else {
+                            return completionHandler(FileProviderFTPError.unknownError())
+                        }
+
                         // starting passive task
-                        let timeout = self.session.configuration.timeoutIntervalForRequest
+                        let timeout = strongSelf.session.configuration.timeoutIntervalForRequest
                         onTask?(dataTask)
                         
                         if data.count == 0 { return }
@@ -965,7 +1064,11 @@ internal extension FTPFileProvider {
                             
                             completionHandler(nil)
                         })
-                    }) { (response, error) in
+                    }) { [weak self] (response, error) in
+                        guard let strongSelf = self else {
+                            return completionHandler(FileProviderFTPError.unknownError())
+                        }
+
                         success_lock.lock()
                         guard success else {
                             success_lock.unlock()
@@ -979,14 +1082,14 @@ internal extension FTPFileProvider {
                             }
                             
                             guard let response = response else {
-                                throw URLError(.cannotParseResponse, url: self.url(of: filePath))
+                                throw URLError(.cannotParseResponse, url: strongSelf.url(of: filePath))
                             }
                             
                             if !(response.hasPrefix("1") || response.hasPrefix("2")) {
                                 throw FileProviderFTPError(message: response)
                             }
                         } catch {
-                            self.dispatch_queue.async {
+                            strongSelf.dispatch_queue.async {
                                 completionHandler(error)
                             }
                         }
@@ -1171,6 +1274,15 @@ public struct FileProviderFTPError: LocalizedError {
     /// Contents returned by server as error description
     public let serverDescription: String?
     
+    /// 미확인 에러 반환
+    static func unknownError() -> FileProviderFTPError {
+        return FileProviderFTPError.init(message: "Unknown error was occurred")
+    }
+    /// 특정 경로의 미확인 에러 반환
+    static func unknownError(atPath path: String) -> FileProviderFTPError {
+        return FileProviderFTPError.init(message: "Unknown error was occurred at \"\(path)\"")
+    }
+
     init(code: Int, path: String, serverDescription: String?) {
         self.code = code
         self.path = path

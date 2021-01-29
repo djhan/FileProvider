@@ -214,7 +214,7 @@ extension SMB2 {
         
         init(name: UUID, data: Data) {
             let uuid = name.uuid
-            var nameData = Data(value: uuid)
+            let nameData = Data(value: uuid)
             self.header = CreateContext.Header(next: 0, nameOffset: 32, nameLength: UInt16(nameData.count), reserved: 0, dataOffset: UInt16(nameData.count), dataLength: UInt32(data.count))
             self.buffer = data
         }
