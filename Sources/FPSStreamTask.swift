@@ -360,12 +360,15 @@ public class FileProviderStreamTask: URLSessionTask, StreamDelegate {
         
         self._state = .canceling
         
-        dispatch_queue.async {
-            self.finish()
+        dispatch_queue.async { [weak self] in
+            guard let strongSelf = self else {
+                return
+            }
+            strongSelf.finish()
             
-            self._state = .completed
-            self._countOfBytesSent = 0
-            self._countOfBytesRecieved = 0
+            strongSelf._state = .completed
+            strongSelf._countOfBytesSent = 0
+            strongSelf._countOfBytesRecieved = 0
         }
     }
     
@@ -482,33 +485,36 @@ public class FileProviderStreamTask: URLSessionTask, StreamDelegate {
         }
         
         let expireDate = Date(timeIntervalSinceNow: timeout)
-        dispatch_queue.async {
+        dispatch_queue.async { [weak self] in
+            guard let strongSelf = self else {
+                return completionHandler(nil, false, FileProviderFTPError.unknownError())
+            }
             var timedOut: Bool = false
-            self.dataReceivedLock.lock()
-            while (self.dataReceived.count == 0 || self.dataReceived.count < minBytes) && !timedOut && !self.endEncountered {
-                self.dataReceivedLock.unlock()
+            strongSelf.dataReceivedLock.lock()
+            while (strongSelf.dataReceived.count == 0 || self.dataReceived.count < minBytes) && !timedOut && !strongSelf.endEncountered {
+                strongSelf.dataReceivedLock.unlock()
                 Thread.sleep(forTimeInterval: 0.1)
                 if let error = inputStream.streamError {
                     completionHandler(nil, inputStream.streamStatus == .atEnd, error)
                     return
                 }
                 timedOut = expireDate < Date()
-                self.dataReceivedLock.lock()
+                strongSelf.dataReceivedLock.lock()
             }
-            self.endEncountered = false
+            strongSelf.endEncountered = false
             var dR: Data?
-            if self.dataReceived.count > maxBytes {
+            if strongSelf.dataReceived.count > maxBytes {
                 let range: Range = 0..<maxBytes
-                dR = self.dataReceived.subdata(in: range)
-                self.dataReceived.removeFirst(maxBytes)
+                dR = strongSelf.dataReceived.subdata(in: range)
+                strongSelf.dataReceived.removeFirst(maxBytes)
             } else {
-                if self.dataReceived.count > 0 {
-                    dR = self.dataReceived
-                    self.dataReceived.removeAll(keepingCapacity: false)
+                if strongSelf.dataReceived.count > 0 {
+                    dR = strongSelf.dataReceived
+                    strongSelf.dataReceived.removeAll(keepingCapacity: false)
                 }
             }
-            let isEOF = inputStream.streamStatus == .atEnd && self.dataReceived.count == 0
-            self.dataReceivedLock.unlock()
+            let isEOF = inputStream.streamStatus == .atEnd && strongSelf.dataReceived.count == 0
+            strongSelf.dataReceivedLock.unlock()
             completionHandler(dR, isEOF, dR == nil ? (timedOut ? URLError(.timedOut) : inputStream.streamError) : nil)
         }
     }
