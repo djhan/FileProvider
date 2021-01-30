@@ -272,9 +272,9 @@ open class FTPFileProvider: NSObject, FileProviderBasicRemote, FileProviderOpera
                 return
             }
             if let error = error {
-                strongSelf.dispatch_queue.async {
+                strongSelf.dispatch_queue.async {  [weak self] in
                     completionHandler([], error)
-                    strongSelf.delegateNotify(operation, error: error)
+                    self?.delegateNotify(operation, error: error)
                 }
                 return
             }
@@ -317,9 +317,9 @@ open class FTPFileProvider: NSObject, FileProviderBasicRemote, FileProviderOpera
                     rfc3659enabled ? strongSelf.parseMLST($0, in: path) : (strongSelf.parseUnixList($0, in: path) ?? strongSelf.parseDOSList($0, in: path))
                 }
                 
-                strongSelf.dispatch_queue.async {
+                strongSelf.dispatch_queue.async { [weak self] in
                     completionHandler(files, nil)
-                    strongSelf.delegateNotify(operation, error: nil)
+                    self?.delegateNotify(operation, error: nil)
                 }
             })
         }
@@ -549,9 +549,9 @@ open class FTPFileProvider: NSObject, FileProviderBasicRemote, FileProviderOpera
                 return
             }
             if let error = error {
-                strongSelf.dispatch_queue.async {
+                strongSelf.dispatch_queue.async { [weak self] in
                     completionHandler?(error)
-                    strongSelf.delegateNotify(operation, error: error)
+                    self?.delegateNotify(operation, error: error)
                 }
                 return
             }
@@ -584,9 +584,9 @@ open class FTPFileProvider: NSObject, FileProviderBasicRemote, FileProviderOpera
                     progress.cancel()
                 }
                 strongSelf.ftpQuit(task)
-                strongSelf.dispatch_queue.async {
+                strongSelf.dispatch_queue.async { [weak self] in
                     completionHandler?(error)
-                    strongSelf.delegateNotify(operation, error: error)
+                    self?.delegateNotify(operation, error: error)
                 }
             })
         }
@@ -644,7 +644,7 @@ open class FTPFileProvider: NSObject, FileProviderBasicRemote, FileProviderOpera
                 strongSelf.delegateNotify(operation, progress: progress.fractionCompleted)
             }) { [weak self] (error) in
                 guard let strongSelf = self else {
-                    self?.dispatch_queue.async {
+                    self?.dispatch_queue.async { [weak self] in
                         let error = FileProviderFTPError.unknownError(atPath: path)
                         completionHandler?(error)
                         self?.delegateNotify(operation, error: error)
@@ -658,17 +658,17 @@ open class FTPFileProvider: NSObject, FileProviderBasicRemote, FileProviderOpera
                 do {
                     try FileManager.default.moveItem(at: tempURL, to: destURL)
                 } catch {
-                    strongSelf.dispatch_queue.async {
+                    strongSelf.dispatch_queue.async { [weak self] in
                         completionHandler?(error)
-                        strongSelf.delegateNotify(operation, error: error)
+                        self?.delegateNotify(operation, error: error)
                     }
                     try? FileManager.default.removeItem(at: tempURL)
                     return
                 }
                 
-                strongSelf.dispatch_queue.async {
+                strongSelf.dispatch_queue.async { [weak self] in
                     completionHandler?(error)
-                    strongSelf.delegateNotify(operation, error: error)
+                    self?.delegateNotify(operation, error: error)
                 }
             }
         }
@@ -679,9 +679,9 @@ open class FTPFileProvider: NSObject, FileProviderBasicRemote, FileProviderOpera
     open func contents(path: String, offset: Int64, length: Int, completionHandler: @escaping ((_ contents: Data?, _ error: Error?) -> Void)) -> Progress? {
         let operation = FileOperationType.fetch(path: path)
         if length == 0 || offset < 0 {
-            dispatch_queue.async {
+            dispatch_queue.async { [weak self] in
                 completionHandler(Data(), nil)
-                self.delegateNotify(operation)
+                self?.delegateNotify(operation)
             }
             return nil
         }
@@ -726,7 +726,7 @@ open class FTPFileProvider: NSObject, FileProviderBasicRemote, FileProviderOpera
             }) { [weak self] (error) in
                 guard let strongSelf = self else {
                     progress.cancel()
-                    self?.dispatch_queue.async {
+                    self?.dispatch_queue.async { [weak self] in
                         let error = FileProviderFTPError.unknownError(atPath: path)
                         completionHandler(nil, error)
                         self?.delegateNotify(operation, error: error)
@@ -736,17 +736,17 @@ open class FTPFileProvider: NSObject, FileProviderBasicRemote, FileProviderOpera
 
                 if let error = error {
                     progress.cancel()
-                    strongSelf.dispatch_queue.async {
+                    strongSelf.dispatch_queue.async { [weak self] in
                         completionHandler(nil, error)
-                        strongSelf.delegateNotify(operation, error: error)
+                        self?.delegateNotify(operation, error: error)
                     }
                     return
                 }
                 
                 if let data = stream.property(forKey: .dataWrittenToMemoryStreamKey) as? Data {
-                    strongSelf.dispatch_queue.async {
+                    strongSelf.dispatch_queue.async { [weak self] in
                         completionHandler(data, nil)
-                        strongSelf.delegateNotify(operation)
+                        self?.delegateNotify(operation)
                     }
                 }
             }
@@ -775,7 +775,7 @@ open class FTPFileProvider: NSObject, FileProviderBasicRemote, FileProviderOpera
         }
         self.ftpLogin(task) { [weak self] (error) in
             guard let strongSelf = self else {
-                self?.dispatch_queue.async {
+                self?.dispatch_queue.async { [weak self] in
                     let error = FileProviderFTPError.unknownError(atPath: path)
                     completionHandler?(error)
                     self?.delegateNotify(operation, error: error)
@@ -784,9 +784,9 @@ open class FTPFileProvider: NSObject, FileProviderBasicRemote, FileProviderOpera
             }
 
             if let error = error {
-                strongSelf.dispatch_queue.async {
+                strongSelf.dispatch_queue.async { [weak self] in
                     completionHandler?(error)
-                    strongSelf.delegateNotify(operation, error: error)
+                    self?.delegateNotify(operation, error: error)
                 }
                 return
             }
@@ -807,7 +807,7 @@ open class FTPFileProvider: NSObject, FileProviderBasicRemote, FileProviderOpera
                     guard let strongSelf = self else {
                         progress.cancel()
                         self?.ftpQuit(task)
-                        self?.dispatch_queue.async {
+                        self?.dispatch_queue.async { [weak self] in
                             let error = FileProviderFTPError.unknownError(atPath: path)
                             completionHandler?(error)
                             self?.delegateNotify(operation, error: error)
@@ -819,9 +819,9 @@ open class FTPFileProvider: NSObject, FileProviderBasicRemote, FileProviderOpera
                         progress.cancel()
                     }
                     strongSelf.ftpQuit(task)
-                    strongSelf.dispatch_queue.async {
+                    strongSelf.dispatch_queue.async { [weak self] in
                         completionHandler?(error)
-                        strongSelf.delegateNotify(operation, error: error)
+                        self?.delegateNotify(operation, error: error)
                     }
                 })
             }
@@ -843,9 +843,9 @@ open class FTPFileProvider: NSObject, FileProviderBasicRemote, FileProviderOpera
     public func contents(path: String, offset: Int64, length: Int, responseHandler: ((URLResponse) -> Void)?, progressHandler: @escaping (Int64, Data) -> Void, completionHandler: SimpleCompletionHandler) -> Progress? {
         let operation = FileOperationType.fetch(path: path)
         if length == 0 || offset < 0 {
-            dispatch_queue.async {
+            dispatch_queue.async { [weak self] in
                 completionHandler?(nil)
-                self.delegateNotify(operation)
+                self?.delegateNotify(operation)
             }
             return nil
         }
@@ -882,15 +882,15 @@ open class FTPFileProvider: NSObject, FileProviderBasicRemote, FileProviderOpera
                     weakTask?.cancel()
                 }
                 progress.setUserInfoObject(Date(), forKey: .startingTimeKey)
-            }, onProgress: { data, recevied, totalReceived, totalSize in
+            }, onProgress: { [weak self] (data, recevied, totalReceived, totalSize) in
                 progressHandler(totalReceived - recevied, data)
                 progress.totalUnitCount = totalSize
                 progress.completedUnitCount = totalReceived
-                strongSelf.delegateNotify(operation, progress: progress.fractionCompleted)
+                self?.delegateNotify(operation, progress: progress.fractionCompleted)
             }) { [weak self] (data, error) in
                 guard let strongSelf = self else {
                     progress.cancel()
-                    self?.dispatch_queue.async {
+                    self?.dispatch_queue.async { [weak self] in
                         let error = FileProviderFTPError.unknownError(atPath: path)
                         completionHandler?(error)
                         self?.delegateNotify(operation, error: error)
@@ -900,16 +900,16 @@ open class FTPFileProvider: NSObject, FileProviderBasicRemote, FileProviderOpera
 
                 if let error = error {
                     progress.cancel()
-                    strongSelf.dispatch_queue.async {
+                    strongSelf.dispatch_queue.async { [weak self] in
                         completionHandler?(error)
-                        strongSelf.delegateNotify(operation, error: error)
+                        self?.delegateNotify(operation, error: error)
                     }
                     return
                 }
                 
-                strongSelf.dispatch_queue.async {
+                strongSelf.dispatch_queue.async { [weak self] in
                     completionHandler?(nil)
-                    strongSelf.delegateNotify(operation)
+                    self?.delegateNotify(operation)
                 }
             }
         }
@@ -1051,7 +1051,7 @@ extension FTPFileProvider {
         progress.becomeCurrent(withPendingUnitCount: 1)
         _ = self.copyItem(path: sourcePath, toLocalURL: localURL) { [weak self] (error) in
             guard let strongSelf = self else {
-                self?.dispatch_queue.async {
+                self?.dispatch_queue.async { [weak self] in
                     let error = FileProviderFTPError.unknownError()
                     completionHandler?(error)
                     self?.delegateNotify(operation, error: error)
@@ -1060,9 +1060,9 @@ extension FTPFileProvider {
             }
 
             if let error = error {
-                strongSelf.dispatch_queue.async {
+                strongSelf.dispatch_queue.async { [weak self] in
                     completionHandler?(error)
-                    strongSelf.delegateNotify(operation, error: error)
+                    self?.delegateNotify(operation, error: error)
                 }
                 return
             }
@@ -1137,9 +1137,9 @@ extension FTPFileProvider {
             }
 
             if let error = error {
-                strongSelf.dispatch_queue.async {
+                strongSelf.dispatch_queue.async { [weak self] in
                     completionHandler?(error)
-                    strongSelf.delegateNotify(operation, error: error)
+                    self?.delegateNotify(operation, error: error)
                 }
                 return
             }
@@ -1158,7 +1158,7 @@ extension FTPFileProvider {
             
             strongSelf.execute(command: command, on: task, completionHandler: { [weak self] (response, error) in
                 guard let strongSelf = self else {
-                    self?.dispatch_queue.async {
+                    self?.dispatch_queue.async { [weak self] in
                         let error = FileProviderFTPError.unknownError()
                         completionHandler?(error)
                         self?.delegateNotify(operation, error: error)
@@ -1167,9 +1167,9 @@ extension FTPFileProvider {
                 }
 
                 recursiveProgress.completedUnitCount += 1
-                strongSelf.dispatch_queue.async {
+                strongSelf.dispatch_queue.async { [weak self] in
                     completionHandler?(error)
-                    strongSelf.delegateNotify(operation, error: error)
+                    self?.delegateNotify(operation, error: error)
                 }
                 // TODO: Digest response
             })

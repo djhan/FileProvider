@@ -356,8 +356,11 @@ internal extension FTPFileProvider {
         case .extendedPassive:
             self.ftpExtendedPassive(task, completionHandler: completionHandler)
         case .active:
-            dispatch_queue.async {
-                self.ftpActive(task, completionHandler: completionHandler)
+            dispatch_queue.async { [weak self] in
+                guard let strongSelf = self else {
+                    return completionHandler(nil, FileProviderFTPError.unknownError())
+                }
+                strongSelf.ftpActive(task, completionHandler: completionHandler)
             }
         }
     }
@@ -471,11 +474,14 @@ internal extension FTPFileProvider {
         let progress = Progress(totalUnitCount: -1)
         let queue = DispatchQueue(label: "\(self.type).recursiveList")
         let group = DispatchGroup()
-        queue.async {
+        queue.async { [weak self] in
+            guard let strongSelf = self else {
+                return completionHandler([], FileProviderFTPError.unknownError())
+            }
             var result = [FileObject]()
             var errorInfo:Error?
             group.enter()
-            self.contentsOfDirectory(path: path, completionHandler: { [weak self] (files, error) in
+            strongSelf.contentsOfDirectory(path: path, completionHandler: { [weak self] (files, error) in
                 guard let strongSelf = self else {
                     return completionHandler([], FileProviderFTPError.unknownError())
                 }
@@ -515,7 +521,7 @@ internal extension FTPFileProvider {
             if let error = errorInfo {
                 completionHandler([], error)
             } else {
-                self.dispatch_queue.async {
+                strongSelf.dispatch_queue.async {
                     completionHandler(result, nil)
                 }
             }
