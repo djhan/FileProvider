@@ -491,7 +491,7 @@ public class FileProviderStreamTask: URLSessionTask, StreamDelegate {
             }
             var timedOut: Bool = false
             strongSelf.dataReceivedLock.lock()
-            while (strongSelf.dataReceived.count == 0 || self.dataReceived.count < minBytes) && !timedOut && !strongSelf.endEncountered {
+            while (strongSelf.dataReceived.count == 0 || strongSelf.dataReceived.count < minBytes) && !timedOut && !strongSelf.endEncountered {
                 strongSelf.dataReceivedLock.unlock()
                 Thread.sleep(forTimeInterval: 0.1)
                 if let error = inputStream.streamError {
