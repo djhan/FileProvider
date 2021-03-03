@@ -312,7 +312,6 @@ open class FTPFileProvider: NSObject, FileProviderBasicRemote, FileProviderOpera
                     return
                 }
                 
-                
                 let files: [FileObject] = contents.compactMap {
                     rfc3659enabled ? strongSelf.parseMLST($0, in: path) : (strongSelf.parseUnixList($0, in: path) ?? strongSelf.parseDOSList($0, in: path))
                 }

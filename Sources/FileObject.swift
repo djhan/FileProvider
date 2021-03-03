@@ -206,6 +206,11 @@ extension FileObject {
         result["isRegularFile"] = self.isRegularFile
         result["isSymLink"] = self.isSymLink
         result["type"] = typeDict[self.type] ?? "unknown"
+        
+        // 추가
+        result["title"] = self.name
+        result["modificationDate"] = self.modifiedDate
+
         return result
     }
     

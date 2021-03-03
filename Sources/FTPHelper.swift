@@ -471,7 +471,8 @@ internal extension FTPFileProvider {
     
     func recursiveList(path: String, useMLST: Bool, foundItemsHandler: ((_ contents: [FileObject]) -> Void)? = nil,
                        completionHandler: @escaping (_ contents: [FileObject], _ error: Error?) -> Void) -> Progress? {
-        let progress = Progress(totalUnitCount: -1)
+        //let progress = Progress(totalUnitCount: -1)
+        var progress: Progress?
         let queue = DispatchQueue(label: "\(self.type).recursiveList")
         let group = DispatchGroup()
         queue.async { [weak self] in
@@ -481,7 +482,7 @@ internal extension FTPFileProvider {
             var result = [FileObject]()
             var errorInfo:Error?
             group.enter()
-            strongSelf.contentsOfDirectory(path: path, completionHandler: { [weak self] (files, error) in
+            progress = strongSelf.contentsOfDirectoryWithProgress(path: path, completionHandler: { [weak self] (files, error) in
                 guard let strongSelf = self else {
                     return completionHandler([], FileProviderFTPError.unknownError())
                 }
@@ -493,27 +494,50 @@ internal extension FTPFileProvider {
                 }
                 
                 result.append(contentsOf: files)
-                progress.completedUnitCount = Int64(files.count)
+                //progress?.completedUnitCount = Int64(files.count)
                 foundItemsHandler?(files)
                 
+                // 세마포어 선언
+                var semaphore: DispatchSemaphore?
+                // 동시에 수십 개 쿼리가 실행되지 않도록, 세마포어로 순차 실행한다
+
                 let directories: [FileObject] = files.filter { $0.isDirectory }
-                progress.becomeCurrent(withPendingUnitCount: Int64(directories.count))
+                //progress?.becomeCurrent(withPendingUnitCount: Int64(directories.count))
                 for dir in directories {
-                    group.enter()
-                    _ = strongSelf.recursiveList(path: dir.path, useMLST: useMLST, foundItemsHandler: foundItemsHandler) { (contents, error) in
+                    if progress?.isCancelled == true {
+                        print("FTPHelper>recursiveList(path:): 사용자 중지 발생, 중지")
+                        errorInfo = FileProviderFTPError.init(message: "Aborted by user", path: dir.path)
+                        break
+                    }
+                    //group.enter()
+                    // 세마포어 초기화
+                    if semaphore == nil { semaphore = DispatchSemaphore(value: 0) }
+                    // 하위 프로그레스로 등록
+                    var subProgress: Progress?
+                    subProgress = strongSelf.recursiveList(path: dir.path, useMLST: useMLST, foundItemsHandler: foundItemsHandler) { (contents, error) in
                         if let error = error {
                             errorInfo = error
-                            group.leave()
+                            //group.leave()
+                            // 세마포어 해제
+                            semaphore?.signal()
                             return
                         }
                         
                         foundItemsHandler?(files)
                         result.append(contentsOf: contents)
                         
-                        group.leave()
+                        //group.leave()
+                        // 세마포어 해제
+                        semaphore?.signal()
                     }
+                    if subProgress != nil {
+                        progress?.addChild(subProgress!, withPendingUnitCount: 1)
+                    }
+                    
+                    // 세마포어 대기
+                    semaphore?.wait()
                 }
-                progress.resignCurrent()
+                //progress?.resignCurrent()
                 group.leave()
             })
             group.wait()
