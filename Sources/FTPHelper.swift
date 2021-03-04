@@ -469,6 +469,9 @@ internal extension FTPFileProvider {
         }
     }
     
+    /**
+     재귀적 목록 생성
+     */
     func recursiveList(path: String, useMLST: Bool, foundItemsHandler: ((_ contents: [FileObject]) -> Void)? = nil,
                        completionHandler: @escaping (_ contents: [FileObject], _ error: Error?) -> Void) -> Progress? {
         //let progress = Progress(totalUnitCount: -1)
@@ -490,6 +493,11 @@ internal extension FTPFileProvider {
                 if let error = error {
                     errorInfo = error
                     group.leave()
+                    return
+                }
+                // 취소 발생시
+                if progress?.isCancelled == true {
+                    completionHandler([], FileProviderFTPError.init(message: "Aborted by user"))
                     return
                 }
                 

@@ -414,16 +414,75 @@ open class FTPFileProvider: NSObject, FileProviderBasicRemote, FileProviderOpera
         }
     }
     
+    /**
+     FTP Provider의 검색 메쏘드
+     - 기본 메쏘드에서 일부 변경 처리
+     - Parameters:
+        - path: 검색 대상 경로
+        - recursive: 재귀적 검색 여부
+        - query: predicate 쿼리
+        - foundItemsHandler: 중간 완료 핸들러. 현재 발견된 아이템 배열 반환
+        - completionHandler: 최종 완료 핸들러. 모든 발견된 아이템 배열 반환
+        - finalFiles: 최종 발견된 아이템 배열
+        - error: 에러값
+     - Returns: Progress. 옵셔널
+     */
+    @discardableResult
+    open func searchFiles(path: String,
+                          recursive: Bool,
+                          query: NSPredicate,
+                          foundItemsHandler: ((_ checkFiles: [FileObject]) -> Void)?,
+                          completionHandler: @escaping (_ finalFiles: [FileObject], _ error: Error?) -> Void) -> Progress? {
+        if recursive {
+            return self.recursiveList(path: path, useMLST: true, foundItemsHandler: { items in
+                if let foundItemsHandler = foundItemsHandler {
+                    // 중간 완료 핸들러 반환
+                    let foundFiles = items.filter { query.evaluate(with: $0.mapPredicate()) }
+                    foundItemsHandler(foundFiles)
+                }
+            }, completionHandler: { files, error in
+                if let error = error {
+                    completionHandler([], error)
+                    return
+                }
+                // 최종 완료 핸들러 반환
+                let foundFiles = files.filter { query.evaluate(with: $0.mapPredicate()) }
+                completionHandler(foundFiles, nil)
+            })
+        } else {
+            return self.contentsOfDirectoryWithProgress(path: path, completionHandler: { (items, error) in
+                if let error = error {
+                    completionHandler([], error)
+                    return
+                }
+                
+                var result = [FileObject]()
+                for item in items where query.evaluate(with: item.mapPredicate()) {
+                    result.append(item)
+                }
+                let foundFiles = items.filter { query.evaluate(with: $0.mapPredicate()) }
+                result.append(contentsOf: foundFiles)
+                // 중간 완료 핸들러 반환
+                foundItemsHandler?(foundFiles)
+                // 최종 완료 핸들러 반환
+                completionHandler(result, nil)
+            })
+        }
+    }
+
+    /**
+     FTP Provider의 기본 검색 메쏘드
+     */
     @discardableResult
     open func searchFiles(path: String, recursive: Bool, query: NSPredicate, foundItemHandler: ((FileObject) -> Void)?, completionHandler: @escaping (_ files: [FileObject], _ error: Error?) -> Void) -> Progress? {
-        let progress = Progress(totalUnitCount: -1)
+        //let progress = Progress(totalUnitCount: -1)
         if recursive {
             return self.recursiveList(path: path, useMLST: true, foundItemsHandler: { items in
                 if let foundItemHandler = foundItemHandler {
                     for item in items where query.evaluate(with: item.mapPredicate()) {
                         foundItemHandler(item)
                     }
-                    progress.totalUnitCount = Int64(items.count)
+                    //progress.totalUnitCount = Int64(items.count)
                 }
             }, completionHandler: { files, error in
                 if let error = error {
@@ -435,7 +494,8 @@ open class FTPFileProvider: NSObject, FileProviderBasicRemote, FileProviderOpera
                 completionHandler(foundFiles, nil)
             })
         } else {
-            self.contentsOfDirectory(path: path, completionHandler: { (items, error) in
+            //self.contentsOfDirectory(path: path, completionHandler: { (items, error) in
+            return self.contentsOfDirectoryWithProgress(path: path, completionHandler: { (items, error) in
                 if let error = error {
                     completionHandler([], error)
                     return
@@ -450,7 +510,7 @@ open class FTPFileProvider: NSObject, FileProviderBasicRemote, FileProviderOpera
             })
         }
         
-        return progress
+        //return progress
     }
     
     open func url(of path: String?) -> URL {
