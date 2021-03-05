@@ -838,21 +838,26 @@ extension FileProviderStreamTask {
     open func stream(_ aStream: Stream, handle eventCode: Stream.Event) {
         if eventCode.contains(.errorOccurred) {
             self._error = aStream.streamError
-            streamDelegate?.urlSession?(_underlyingSession, task: self, didCompleteWithError: error)
+            self.streamDelegate?.urlSession?(_underlyingSession, task: self, didCompleteWithError: self.error)
         }
         
-        if aStream == inputStream && eventCode.contains(.endEncountered) {
+        if aStream == self.inputStream && eventCode.contains(.endEncountered) {
             self.endEncountered = true
         }
         
-        if aStream == inputStream && eventCode.contains(.hasBytesAvailable) {
-            while (inputStream!.hasBytesAvailable) {
+        if aStream == self.inputStream && eventCode.contains(.hasBytesAvailable) {
+            while (self.inputStream?.hasBytesAvailable ?? false) {
                 var buffer = [UInt8](repeating: 0, count: 2048)
-                let len = inputStream!.read(&buffer, maxLength: buffer.count)
+                guard let inputStream = self.inputStream else {
+                    print("FileProviderStreamTask>stream(_:handle:): inputStream이 nil!")
+                    self.streamDelegate?.urlSession?(_underlyingSession, task: self, didCompleteWithError: FileProviderFTPError.init(message: "File stream is released"))
+                    return
+                }
+                let len = inputStream.read(&buffer, maxLength: buffer.count)
                 if len > 0 {
-                    dataReceivedLock.lock()
-                    dataReceived.append(&buffer, count: len)
-                    dataReceivedLock.unlock()
+                    self.dataReceivedLock.lock()
+                    self.dataReceived.append(&buffer, count: len)
+                    self.dataReceivedLock.unlock()
                     self._countOfBytesRecieved += Int64(len)
                 }
             }
