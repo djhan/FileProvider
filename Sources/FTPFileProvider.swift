@@ -316,11 +316,10 @@ open class FTPFileProvider: NSObject, FileProviderBasicRemote, FileProviderOpera
                     }
                     //---------------------------------------------------------------//
                     if let uerror = error as? URLError {
-                        // unsupportedURL / timedOut / dataLengthExceedsMaximum에러인 경우
+                        // unsupportedURL / timedOut에러인 경우
                         // rfc3659enabled 를 false 로 해서 재작업 진행
                         if uerror.code == .unsupportedURL ||
-                            uerror.code == .timedOut ||
-                            uerror.code == .dataLengthExceedsMaximum {
+                            uerror.code == .timedOut {
                             
                             // 에러 재시도 횟수가 5회를 넘었는지 확인
                             guard strongSelf.tryErrorLimit < 5 else {
@@ -480,11 +479,10 @@ open class FTPFileProvider: NSObject, FileProviderBasicRemote, FileProviderOpera
         func checkRetry(_ error: Error) -> Bool {
             // URLError인 경우
             if let uerror = error as? URLError {
-                // unsupportedURL / timedOut / dataLengthExceedsMaximum 에러인 경우
+                // unsupportedURL / timedOut 에러인 경우
                 // rfc3659enabled 를 false 로 해서 재작업 진행
                 if uerror.code == .unsupportedURL ||
-                    uerror.code == .timedOut ||
-                    uerror.code == .dataLengthExceedsMaximum {
+                    uerror.code == .timedOut {
                     
                     // 에러 재시도 횟수가 5회를 넘었는지 확인
                     guard self.tryErrorLimit < 5 else {
@@ -869,11 +867,10 @@ open class FTPFileProvider: NSObject, FileProviderBasicRemote, FileProviderOpera
             // URLError인 경우
             if let uerror = error as? URLError {
                 print("FTPFileProvider>contents(path:offfset:length:completionHandler:): error code = \(uerror.code)")
-                // unsupportedURL / timedOut / dataLengthExceedsMaximum 에러인 경우
+                // unsupportedURL / timedOut  에러인 경우
                 // rfc3659enabled 를 false 로 해서 재작업 진행
                 if uerror.code == .unsupportedURL ||
-                    uerror.code == .timedOut ||
-                    uerror.code == .dataLengthExceedsMaximum {
+                    uerror.code == .timedOut {
                     
                     // 에러 재시도 횟수가 5회를 넘었는지 확인
                     guard self.tryErrorLimit < 5 else {
