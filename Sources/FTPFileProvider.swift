@@ -30,7 +30,7 @@ open class FTPFileProvider: NSObject, FileProviderBasicRemote, FileProviderOpera
     public let baseURL: URL?
     
     /// 에러 발생시 재시도 횟수
-    var tryErrorLimit: Int = 0
+    //var tryErrorLimit: Int = 0
     
     open var dispatch_queue: DispatchQueue
     open var operation_queue: OperationQueue {
@@ -242,15 +242,24 @@ open class FTPFileProvider: NSObject, FileProviderBasicRemote, FileProviderOpera
 
      - Progress를 반환하도록 수정 처리
 
-     - Parameter path: path to target directory. If empty, root will be iterated.
-     - Parameter rfc3659enabled: uses MLST command instead of old LIST to get files attributes, default is `true`.
-     - Parameter completionHandler: a closure with result of directory entries or error.
-     - Parameter contents: An array of `FileObject` identifying the the directory entries.
-     - Parameter error: Error returned by system.
+     - Parameters:
+        - path: path to target directory. If empty, root will be iterated.
+        - rfc3659enabled: uses MLST command instead of old LIST to get files attributes, default is `true`.
+        - tryCount: 재시도 횟수. 기본값은 nil로 최초 실행될 때 0으로 세팅된다. 이후 재귀적으로 실행시 1씩 증가된 값이 지정된다
+        - completionHandler: a closure with result of directory entries or error.
+        - contents: An array of `FileObject` identifying the the directory entries.
+        - error: Error returned by system.
      */
     @discardableResult
-    open func contentsOfDirectory(path apath: String, rfc3659enabled: Bool , completionHandler: @escaping (_ contents: [FileObject], _ error: Error?) -> Void) -> Progress? {
+    open func contentsOfDirectory(path apath: String,
+                                  rfc3659enabled: Bool,
+                                  tryCount: Int? = nil,
+                                  completionHandler: @escaping (_ contents: [FileObject], _ error: Error?) -> Void) -> Progress? {
         let path = ftpPath(apath)
+        
+        // 재시도 횟수
+        // tryCount가 nil이 아닌 경우, 그 값을 사용. nil인 경우 0으로 지정
+        let tryCount = tryCount != nil ? tryCount! : 0
         
         let operation = FileOperationType.fetch(path: apath)
         guard fileOperationDelegate?.fileProvider(self, shouldDoOperation: operation) ?? true == true else {
@@ -272,16 +281,12 @@ open class FTPFileProvider: NSObject, FileProviderBasicRemote, FileProviderOpera
             guard let strongSelf = self else {
                 completionHandler([], FileProviderFTPError.unknownError(atPath: apath))
                 self?.delegateNotify(operation, error: error)
-                // 에러 재시도 횟수를 0으로 리셋
-                self?.tryErrorLimit = 0
                 return
             }
             if let error = error {
                 strongSelf.dispatch_queue.async {  [weak self] in
                     completionHandler([], error)
                     self?.delegateNotify(operation, error: error)
-                    // 에러 재시도 횟수를 0으로 리셋
-                    strongSelf.tryErrorLimit = 0
                 }
                 return
             }
@@ -291,8 +296,6 @@ open class FTPFileProvider: NSObject, FileProviderBasicRemote, FileProviderOpera
                 guard let strongSelf = self else {
                     completionHandler([], FileProviderFTPError.unknownError(atPath: apath))
                     self?.delegateNotify(operation, error: error)
-                    // 에러 재시도 횟수를 0으로 리셋
-                    self?.tryErrorLimit = 0
                     return
                 }
 
@@ -310,8 +313,6 @@ open class FTPFileProvider: NSObject, FileProviderBasicRemote, FileProviderOpera
                         strongSelf.dispatch_queue.async {
                             completionHandler([], error)
                             strongSelf.delegateNotify(operation, error: error)
-                            // 에러 재시도 횟수를 0으로 리셋
-                            strongSelf.tryErrorLimit = 0
                         }
                     }
                     //---------------------------------------------------------------//
@@ -322,18 +323,19 @@ open class FTPFileProvider: NSObject, FileProviderBasicRemote, FileProviderOpera
                             uerror.code == .timedOut {
                             
                             // 에러 재시도 횟수가 5회를 넘었는지 확인
-                            guard strongSelf.tryErrorLimit < 5 else {
+                            guard tryCount < 5 else {
                                 // 5회째인 경우, 에러 처리후 종료
                                 return processError()
                             }
                             
                             // 추가 Progresss
-                            let appendedProgress = strongSelf.contentsOfDirectory(path: path, rfc3659enabled: false, completionHandler: completionHandler)
+                            let appendedProgress = strongSelf.contentsOfDirectory(path: path,
+                                                                                  rfc3659enabled: false,
+                                                                                  tryCount: tryCount + 1,
+                                                                                  completionHandler: completionHandler)
                             // 현재 progress에 하위 Progress로 추가
                             if appendedProgress != nil {
                                 progress.addChild(appendedProgress!, withPendingUnitCount: 1)
-                                // 에러 재시도 횟수를 1 추가
-                                strongSelf.tryErrorLimit += 1
                                 // 종료 처리
                                 return
                             }
@@ -354,8 +356,6 @@ open class FTPFileProvider: NSObject, FileProviderBasicRemote, FileProviderOpera
                 strongSelf.dispatch_queue.async { [weak self] in
                     completionHandler(files, nil)
                     self?.delegateNotify(operation, error: nil)
-                    // 에러 재시도 횟수를 0으로 리셋
-                    strongSelf.tryErrorLimit = 0
                 }
             })
         }
@@ -458,6 +458,7 @@ open class FTPFileProvider: NSObject, FileProviderBasicRemote, FileProviderOpera
         - path: 검색 대상 경로
         - recursive: 재귀적 검색 여부
         - query: predicate 쿼리
+        - tryCount: 재시도 횟수. 기본값은 nil로 최초 실행될 때 0으로 세팅된다. 이후 재귀적으로 실행시 1씩 증가된 값이 지정된다
         - foundItemsHandler: 중간 완료 핸들러. 현재 발견된 아이템 배열 반환
         - completionHandler: 최종 완료 핸들러. 모든 발견된 아이템 배열 반환
         - finalFiles: 최종 발견된 아이템 배열
@@ -468,11 +469,16 @@ open class FTPFileProvider: NSObject, FileProviderBasicRemote, FileProviderOpera
     open func searchFiles(path: String,
                           recursive: Bool,
                           query: NSPredicate,
+                          tryCount: Int? = nil,
                           foundItemsHandler: ((_ checkFiles: [FileObject]) -> Void)?,
                           completionHandler: @escaping (_ finalFiles: [FileObject], _ error: Error?) -> Void) -> Progress? {
         // 반환할 progress
         var progress: Progress?
         
+        // 재시도 횟수
+        // tryCount가 nil이 아닌 경우, 그 값을 사용. nil인 경우 0으로 지정
+        let tryCount = tryCount != nil ? tryCount! : 0
+
         //---------------------------------------------------------------------------------------------------//
         /// 에러 발생시 재시도 내부 메쏘드
         /// - Returns: 재시도시 true 반환
@@ -485,16 +491,19 @@ open class FTPFileProvider: NSObject, FileProviderBasicRemote, FileProviderOpera
                     uerror.code == .timedOut {
                     
                     // 에러 재시도 횟수가 5회를 넘었는지 확인
-                    guard self.tryErrorLimit < 5 else {
+                    guard tryCount < 5 else {
                         // 5회째인 경우, 에러 처리후 종료
                         completionHandler([], error)
-                        // 재시도 횟수 초기화
-                        self.tryErrorLimit = 0
                         return false
                     }
                     
                     // 재시도
-                    let appendedProgress = self.searchFiles(path: path, recursive: recursive, query: query, foundItemsHandler: foundItemsHandler, completionHandler: completionHandler)
+                    let appendedProgress = self.searchFiles(path: path,
+                                                            recursive: recursive,
+                                                            query: query,
+                                                            tryCount: tryCount + 1,
+                                                            foundItemsHandler: foundItemsHandler,
+                                                            completionHandler: completionHandler)
                     if appendedProgress != nil {
                         progress?.addChild(appendedProgress!, withPendingUnitCount: 1)
                         return true
@@ -523,15 +532,12 @@ open class FTPFileProvider: NSObject, FileProviderBasicRemote, FileProviderOpera
                     // 재시도 실패시
                     // 에러 처리후 종료
                     completionHandler([], error)
-                    // 재시도 횟수 초기화
-                    self.tryErrorLimit = 0
                     return
                 }
 
                 // 최종 완료 핸들러 반환
                 let foundFiles = files.filter { query.evaluate(with: $0.mapPredicate()) }
                 completionHandler(foundFiles, nil)
-                self.tryErrorLimit = 0
             })
         } else {
             progress = self.contentsOfDirectoryWithProgress(path: path, completionHandler: { (items, error) in
@@ -543,8 +549,6 @@ open class FTPFileProvider: NSObject, FileProviderBasicRemote, FileProviderOpera
                     // 재시도 실패시
                     // 에러 처리후 종료
                     completionHandler([], error)
-                    // 재시도 횟수 초기화
-                    self.tryErrorLimit = 0
                     return
                 }
                 
@@ -555,8 +559,6 @@ open class FTPFileProvider: NSObject, FileProviderBasicRemote, FileProviderOpera
                 foundItemsHandler?(foundFiles)
                 // 최종 완료 핸들러 반환
                 completionHandler(result, nil)
-                // 재시도 횟수 초기화
-                self.tryErrorLimit = 0
             })
         }
         return progress
@@ -831,23 +833,58 @@ open class FTPFileProvider: NSObject, FileProviderBasicRemote, FileProviderOpera
     }
     
     /**
-     특정 Path의 Data를 완료 핸들러로 반환
+     특정 Path의 `Data`를 완료 핸들러로 반환하는 기본 메쏘드
+     - Parameters:
+     - path: `Data`를 가져올 하위 경로.
+        - offset: `Data`를 가져올 시작 지점
+        - length: 가져올 `Data` 길이
+        - completionHandler: 완료 핸들러
+        - contents: 가져온 `Data` 반환. 실패시 nil 반환
+        - error: 에러 반환
+     - Returns: `Progress` 반환. 실패시 nil 반환
      */
     @discardableResult
     open func contents(path: String,
                        offset: Int64,
                        length: Int,
                        completionHandler: @escaping ((_ contents: Data?, _ error: Error?) -> Void)) -> Progress? {
+        return self.contents(path: path,
+                             offset: offset,
+                             length: length,
+                             tryCount: nil,
+                             completionHandler: completionHandler)
+    }
+    /**
+     특정 Path의 `Data`를 완료 핸들러로 반환하는 확장 메쏘드
+     - Parameters:
+     - path: `Data`를 가져올 하위 경로.
+        - offset: `Data`를 가져올 시작 지점
+        - length: 가져올 `Data` 길이
+        - tryCount: 재시도 횟수. 기본값은 nil로 최초 실행될 때 0으로 세팅된다. 이후 재귀적으로 실행시 1씩 증가된 값이 지정된다
+        - completionHandler: 완료 핸들러
+        - contents: 가져온 `Data` 반환. 실패시 nil 반환
+        - error: 에러 반환
+     - Returns: `Progress` 반환. 실패시 nil 반환
+     */
+    @discardableResult
+    open func contents(path: String,
+                       offset: Int64,
+                       length: Int,
+                       tryCount: Int? = nil,
+                       completionHandler: @escaping ((_ contents: Data?, _ error: Error?) -> Void)) -> Progress? {
         let operation = FileOperationType.fetch(path: path)
         if length == 0 || offset < 0 {
             dispatch_queue.async { [weak self] in
                 completionHandler(Data(), nil)
                 self?.delegateNotify(operation)
-                // 재시도 횟수 초기화
-                self?.tryErrorLimit = 0
             }
             return nil
         }
+        
+        // 재시도 횟수
+        // tryCount가 nil이 아닌 경우, 그 값을 사용. nil인 경우 0으로 지정
+        let tryCount = tryCount != nil ? tryCount! : 0
+
         let progress = Progress(totalUnitCount: -1)
         progress.setUserInfoObject(operation, forKey: .fileProvderOperationTypeKey)
         progress.kind = .file
@@ -873,16 +910,18 @@ open class FTPFileProvider: NSObject, FileProviderBasicRemote, FileProviderOpera
                     uerror.code == .timedOut {
                     
                     // 에러 재시도 횟수가 5회를 넘었는지 확인
-                    guard self.tryErrorLimit < 5 else {
+                    guard tryCount < 5 else {
                         // 5회째인 경우, 에러 처리후 종료
                         completionHandler(nil, error)
-                        // 재시도 횟수 초기화
-                        self.tryErrorLimit = 0
                         return false
                     }
                     
                     // 재시도
-                    let appendedProgress = self.contents(path: path, offset: offset, length: length, completionHandler: completionHandler)
+                    let appendedProgress = self.contents(path: path,
+                                                         offset: offset,
+                                                         length: length,
+                                                         tryCount: tryCount + 1,
+                                                         completionHandler: completionHandler)
                     if appendedProgress != nil {
                         print("FTPFileProvider>contents(path:offfset:length:completionHandler:): 재시도...")
                         progress.addChild(appendedProgress!, withPendingUnitCount: 1)
@@ -900,8 +939,6 @@ open class FTPFileProvider: NSObject, FileProviderBasicRemote, FileProviderOpera
                 self?.dispatch_queue.async {
                     let error = FileProviderFTPError.unknownError(atPath: path)
                     completionHandler(nil, error)
-                    // 재시도 횟수 초기화
-                    self?.tryErrorLimit = 0
                 }
                 return
             }
@@ -913,8 +950,6 @@ open class FTPFileProvider: NSObject, FileProviderBasicRemote, FileProviderOpera
                 // 재시도 실패시
                 strongSelf.dispatch_queue.async {
                     completionHandler(nil, error)
-                    // 재시도 횟수 초기화
-                    self?.tryErrorLimit = 0
                 }
                 return
             }
@@ -937,8 +972,6 @@ open class FTPFileProvider: NSObject, FileProviderBasicRemote, FileProviderOpera
                         let error = FileProviderFTPError.unknownError(atPath: path)
                         completionHandler(nil, error)
                         self?.delegateNotify(operation, error: error)
-                        // 재시도 횟수 초기화
-                        self?.tryErrorLimit = 0
                     }
                     return
                 }
@@ -953,8 +986,6 @@ open class FTPFileProvider: NSObject, FileProviderBasicRemote, FileProviderOpera
                     strongSelf.dispatch_queue.async { [weak self] in
                         completionHandler(nil, error)
                         self?.delegateNotify(operation, error: error)
-                        // 재시도 횟수 초기화
-                        self?.tryErrorLimit = 0
                     }
                     return
                 }
@@ -963,13 +994,10 @@ open class FTPFileProvider: NSObject, FileProviderBasicRemote, FileProviderOpera
                     strongSelf.dispatch_queue.async { [weak self] in
                         completionHandler(data, nil)
                         self?.delegateNotify(operation)
-                        // 재시도 횟수 초기화
-                        self?.tryErrorLimit = 0
                     }
                 }
             }
         }
-        
         return progress
     }
     
