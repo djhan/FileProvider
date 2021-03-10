@@ -523,9 +523,87 @@ internal extension FTPFileProvider {
         return progress
     }
     */
+    
     /**
      재귀적 목록 생성
+     - Parameters:
+        - path: 목록 생성 경로
+        - useMLST: MLST 사용 여부
+        - foundItemsHandler: 중간값 반환 핸들러
+        - completionHandler: 완료 핸들러
+        - results: 찾아낸 `FileObject`를 배열로 반환
+        - error: 에러 발생시 에러값 반환
+     - Returns: `Progress` 반환. 실패시 nil 반환
      */
+    func recursiveList(path: String,
+                       useMLST: Bool,
+                       foundItemsHandler: ((_ contents: [FileObject]) -> Void)? = nil,
+                       completionHandler: @escaping (_ results: [FileObject], _ error: Error?) -> Void) -> Progress? {
+        var progress: Progress?
+        
+        var recursiveResults = [FileObject]()
+        progress = self.contentsOfDirectoryWithProgress(path: path, completionHandler: { [weak self] (files, error) in
+            guard let strongSelf = self else {
+                return completionHandler([], FileProviderFTPError.unknownError())
+            }
+            // 에러 발생시 중지 처리
+            if let error = error {
+                return completionHandler([], error)
+            }
+            // 취소 발생시 중지 처리
+            if progress?.isCancelled == true {
+                return completionHandler([], FileProviderFTPError.init(message: "Aborted by user", path: path))
+            }
+            
+            recursiveResults.append(contentsOf: files)
+            foundItemsHandler?(files)
+            
+            // 세마포어 지정
+            var semaphore: DispatchSemaphore?
+
+            // 하위 디렉토리 확인
+            let directories: [FileObject] = files.filter { $0.isDirectory }
+            if directories.count > 0 {
+                // 디렉토리 개수가 1개 이상일 때 세마포어 초기화
+                semaphore = DispatchSemaphore(value: 0)
+                // 전체 개수를 디렉토리 개수만큼 증가
+                progress?.totalUnitCount += Int64(directories.count)
+            }
+            // 하위 디렉토리 순환
+            for dir in directories {
+                if progress?.isCancelled == true {
+                    print("FTPHelper>recursiveList(path:): 사용자 중지 발생, 중지")
+                    return completionHandler([], FileProviderFTPError.init(message: "Aborted by user", path: dir.path))
+                }
+                // 하위 프로그레스로 등록
+                let subProgress = strongSelf.recursiveList(path: dir.path, useMLST: useMLST, foundItemsHandler: foundItemsHandler) { (results, error) in
+                    // 결과 추가/중간 결과 반환을 여기서 중복 처리할 필요는 없다
+                    // 세마포어 해제
+                    semaphore?.signal()
+                }
+                if subProgress != nil {
+                    progress?.addChild(subProgress!, withPendingUnitCount: 1)
+                }
+                // 세마포어 대기
+                semaphore?.wait()
+                //print("FTPHelper>recursiveList(path:): subProgress 진행상황 = \(subProgress?.fractionCompleted) ?? 0")
+            }
+
+            // 성공 종료 처리
+            completionHandler(recursiveResults, nil)
+        })
+                
+        #if DEBUG
+        func pointerMemoryAddress<T: Any>(of target: T) -> String {
+            let address = unsafeBitCast(target, to: Int.self)
+            return String(address, radix: 16)
+        }
+        print("FTPHelper>recursiveList(): \(pointerMemoryAddress(of: progress)) || progress total count = \(progress?.totalUnitCount ?? 0)")
+        #endif
+        
+        return progress
+    }
+    /*
     func recursiveList(path: String, useMLST: Bool, foundItemsHandler: ((_ contents: [FileObject]) -> Void)? = nil,
                        completionHandler: @escaping (_ contents: [FileObject], _ error: Error?) -> Void) -> Progress? {
         var progress: Progress? = Progress(totalUnitCount: -1)
@@ -606,6 +684,7 @@ internal extension FTPFileProvider {
 
         return progress
     }
+    */
 
     func ftpRetrieve(_ task: FileProviderStreamTask, filePath: String, from position: Int64 = 0, length: Int = -1, to stream: OutputStream,
                      onTask: ((_ task: FileProviderStreamTask) -> Void)?,
