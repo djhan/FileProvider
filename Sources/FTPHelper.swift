@@ -592,17 +592,11 @@ internal extension FTPFileProvider {
             // 성공 종료 처리
             completionHandler(recursiveResults, nil)
         })
-                
-        #if DEBUG
-        func pointerMemoryAddress<T: Any>(of target: T) -> String {
-            let address = unsafeBitCast(target, to: Int.self)
-            return String(address, radix: 16)
-        }
-        print("FTPHelper>recursiveList(): \(pointerMemoryAddress(of: progress)) || progress total count = \(progress?.totalUnitCount ?? 0)")
-        #endif
         
         return progress
     }
+    
+    // Deprecated 메쏘드
     /*
     func recursiveList(path: String, useMLST: Bool, foundItemsHandler: ((_ contents: [FileObject]) -> Void)? = nil,
                        completionHandler: @escaping (_ contents: [FileObject], _ error: Error?) -> Void) -> Progress? {

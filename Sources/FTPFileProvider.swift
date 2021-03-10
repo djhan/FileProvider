@@ -327,6 +327,9 @@ open class FTPFileProvider: NSObject, FileProviderBasicRemote, FileProviderOpera
                                 // 5회째인 경우, 에러 처리후 종료
                                 return processError()
                             }
+
+                            // Progress 전체 개수 증가
+                            progress.totalUnitCount += 1
                             
                             // 추가 Progresss
                             let appendedProgress = strongSelf.contentsOfDirectory(path: path,
@@ -496,7 +499,10 @@ open class FTPFileProvider: NSObject, FileProviderBasicRemote, FileProviderOpera
                         completionHandler([], error)
                         return false
                     }
-                    
+
+                    // Progress 전체 개수 증가
+                    progress?.totalUnitCount += 1
+
                     // 재시도
                     let appendedProgress = self.searchFiles(path: path,
                                                             recursive: recursive,
@@ -916,6 +922,9 @@ open class FTPFileProvider: NSObject, FileProviderBasicRemote, FileProviderOpera
                         return false
                     }
                     
+                    // Progress 전체 개수 증가
+                    progress.totalUnitCount += 1
+
                     // 재시도
                     let appendedProgress = self.contents(path: path,
                                                          offset: offset,
