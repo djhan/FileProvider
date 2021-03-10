@@ -468,14 +468,67 @@ internal extension FTPFileProvider {
             }
         }
     }
-    
+    /*
+    func recursiveList(path: String, useMLST: Bool, foundItemsHandler: ((_ contents: [FileObject]) -> Void)? = nil,
+                       completionHandler: @escaping (_ contents: [FileObject], _ error: Error?) -> Void) -> Progress? {
+        let progress = Progress(totalUnitCount: -1)
+        let queue = DispatchQueue(label: "\(self.type).recursiveList")
+        let group = DispatchGroup()
+        queue.async {
+            var result = [FileObject]()
+            var errorInfo:Error?
+            group.enter()
+            self.contentsOfDirectory(path: path, completionHandler: { (files, error) in
+                if let error = error {
+                    errorInfo = error
+                    group.leave()
+                    return
+                }
+                
+                result.append(contentsOf: files)
+                progress.completedUnitCount = Int64(files.count)
+                foundItemsHandler?(files)
+                
+                let directories: [FileObject] = files.filter { $0.isDirectory }
+                progress.becomeCurrent(withPendingUnitCount: Int64(directories.count))
+                for dir in directories {
+                    group.enter()
+                    _=self.recursiveList(path: dir.path, useMLST: useMLST, foundItemsHandler: foundItemsHandler) {
+                        (contents, error) in
+                        if let error = error {
+                            errorInfo = error
+                            group.leave()
+                            return
+                        }
+                        
+                        foundItemsHandler?(files)
+                        result.append(contentsOf: contents)
+                        
+                        group.leave()
+                    }
+                }
+                progress.resignCurrent()
+                group.leave()
+            })
+            group.wait()
+            
+            if let error = errorInfo {
+                completionHandler([], error)
+            } else {
+                self.dispatch_queue.async {
+                    completionHandler(result, nil)
+                }
+            }
+        }
+        return progress
+    }
+    */
     /**
      재귀적 목록 생성
      */
     func recursiveList(path: String, useMLST: Bool, foundItemsHandler: ((_ contents: [FileObject]) -> Void)? = nil,
                        completionHandler: @escaping (_ contents: [FileObject], _ error: Error?) -> Void) -> Progress? {
-        //let progress = Progress(totalUnitCount: -1)
-        var progress: Progress?
+        var progress: Progress? = Progress(totalUnitCount: -1)
         let queue = DispatchQueue(label: "\(self.type).recursiveList")
         let group = DispatchGroup()
         queue.async { [weak self] in
@@ -502,50 +555,34 @@ internal extension FTPFileProvider {
                 }
                 
                 result.append(contentsOf: files)
-                //progress?.completedUnitCount = Int64(files.count)
                 foundItemsHandler?(files)
                 
-                // 세마포어 선언
-                var semaphore: DispatchSemaphore?
-                // 동시에 수십 개 쿼리가 실행되지 않도록, 세마포어로 순차 실행한다
-
                 let directories: [FileObject] = files.filter { $0.isDirectory }
-                //progress?.becomeCurrent(withPendingUnitCount: Int64(directories.count))
                 for dir in directories {
                     if progress?.isCancelled == true {
                         print("FTPHelper>recursiveList(path:): 사용자 중지 발생, 중지")
                         errorInfo = FileProviderFTPError.init(message: "Aborted by user", path: dir.path)
                         break
                     }
-                    //group.enter()
-                    // 세마포어 초기화
-                    if semaphore == nil { semaphore = DispatchSemaphore(value: 0) }
+                    group.enter()
                     // 하위 프로그레스로 등록
                     var subProgress: Progress?
                     subProgress = strongSelf.recursiveList(path: dir.path, useMLST: useMLST, foundItemsHandler: foundItemsHandler) { (contents, error) in
                         if let error = error {
                             errorInfo = error
-                            //group.leave()
-                            // 세마포어 해제
-                            semaphore?.signal()
+                            group.leave()
                             return
                         }
                         
                         foundItemsHandler?(files)
                         result.append(contentsOf: contents)
                         
-                        //group.leave()
-                        // 세마포어 해제
-                        semaphore?.signal()
+                        group.leave()
                     }
                     if subProgress != nil {
                         progress?.addChild(subProgress!, withPendingUnitCount: 1)
                     }
-                    
-                    // 세마포어 대기
-                    semaphore?.wait()
                 }
-                //progress?.resignCurrent()
                 group.leave()
             })
             group.wait()
@@ -558,9 +595,18 @@ internal extension FTPFileProvider {
                 }
             }
         }
+        
+        #if DEBUG
+        func pointerMemoryAddress<T: Any>(of target: T) -> String {
+            let address = unsafeBitCast(target, to: Int.self)
+            return String(address, radix: 16)
+        }
+        print("FTPHelper>recursiveList(): \(pointerMemoryAddress(of: progress)) || progress total count = \(progress?.totalUnitCount ?? 0)")
+        #endif
+
         return progress
     }
-    
+
     func ftpRetrieve(_ task: FileProviderStreamTask, filePath: String, from position: Int64 = 0, length: Int = -1, to stream: OutputStream,
                      onTask: ((_ task: FileProviderStreamTask) -> Void)?,
                      onProgress: @escaping (_ data: Data, _ totalReceived: Int64, _ expectedBytes: Int64) -> Void,
