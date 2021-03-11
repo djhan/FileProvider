@@ -971,8 +971,18 @@ open class FTPFileProvider: NSObject, FileProviderBasicRemote, FileProviderOpera
                 }
                 progress.setUserInfoObject(Date(), forKey: .startingTimeKey)
             }, onProgress: { recevied, totalReceived, totalSize in
-                progress.totalUnitCount = totalSize
+                // 전송 길이가 지정된 경우
+                if length > -1 {
+                    progress.totalUnitCount = Int64(length)
+                }
+                // 지정되지 않은 경우
+                else {
+                    progress.totalUnitCount = totalSize
+                }
                 progress.completedUnitCount = totalReceived
+                #if DEBUG
+                print("FTPFileProvider>contents(path:offfset:length:completionHandler:): 진행 = \(progress.fractionCompleted)")
+                #endif
                 strongSelf.delegateNotify(operation, progress: progress.fractionCompleted)
             }) { [weak self] (error) in
                 guard let strongSelf = self else {
