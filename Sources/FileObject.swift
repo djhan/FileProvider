@@ -186,11 +186,17 @@ extension FileObject {
 
 extension FileObject {
     internal func mapPredicate() -> [String: Any] {
-        let mapDict: [URLResourceKey: String] = [.fileURLKey: "url", .nameKey: "name", .pathKey: "path",
-                                                 .fileSizeKey: "fileSize", .creationDateKey: "creationDate",
-                                                 .contentModificationDateKey: "modifiedDate", .isHiddenKey: "isHidden",
-                                                 .isWritableKey: "isWritable", .serverDateKey: "serverDate",
-                                                 .entryTagKey: "entryTag", .mimeTypeKey: "mimeType"]
+        let mapDict: [URLResourceKey: String] = [.fileURLKey: "url",
+                                                 .nameKey: "name",
+                                                 .pathKey: "path",
+                                                 .fileSizeKey: "fileSize",
+                                                 .creationDateKey: "creationDate",
+                                                 .contentModificationDateKey: "modifiedDate",
+                                                 .isHiddenKey: "isHidden",
+                                                 .isWritableKey: "isWritable",
+                                                 .serverDateKey: "serverDate",
+                                                 .entryTagKey: "entryTag",
+                                                 .mimeTypeKey: "mimeType"]
         let typeDict: [URLFileResourceType: String] = [.directory: "directory", .regular: "regular",
                                                        .symbolicLink: "symbolicLink", .unknown: "unknown"]
         var result = [String: Any]()
@@ -209,7 +215,10 @@ extension FileObject {
         
         // 추가
         result["title"] = self.name
+        result["kMDItemDisplayName"] = self.name
+        result["kMDItemContentCreationDate"] = self.creationDate
         result["modificationDate"] = self.modifiedDate
+        result["kMDItemContentModificationDate"] = self.modifiedDate
 
         return result
     }
