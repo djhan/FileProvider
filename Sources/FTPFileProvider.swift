@@ -262,7 +262,13 @@ open class FTPFileProvider: NSObject, FileProviderBasicRemote, FileProviderOpera
         let tryCount = tryCount != nil ? tryCount! : 0
         
         let operation = FileOperationType.fetch(path: apath)
-        guard fileOperationDelegate?.fileProvider(self, shouldDoOperation: operation) ?? true == true else {
+        guard fileOperationDelegate?.fileProvider(self, shouldDoOperation: operation) ?? true == true,
+              let host = self.baseURL?.host,
+              let port = self.baseURL?.port else {
+            // 에러 처리후 nil 반환
+            let error = FileProviderFTPError.unknownError(atPath: apath)
+            completionHandler([], error)
+            self.delegateNotify(operation, error: error)
             return nil
         }
         // 최종 갯수 1개의 progress 생성
@@ -271,7 +277,7 @@ open class FTPFileProvider: NSObject, FileProviderBasicRemote, FileProviderOpera
         progress.kind = .file
         progress.setUserInfoObject(Progress.FileOperationKind.downloading, forKey: .fileOperationKindKey)
 
-        let task = session.fpstreamTask(withHostName: baseURL!.host!, port: baseURL!.port!)
+        let task = session.fpstreamTask(withHostName: host, port: port)
         task.serverTrustPolicy = serverTrustPolicy
         task.taskDescription = FileOperationType.fetch(path: path).json
         progress.cancellationHandler = {
