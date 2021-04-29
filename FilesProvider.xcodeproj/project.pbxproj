@@ -135,6 +135,7 @@
 		CE27C49B219BFFA0000BE23C /* ServerTrustPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE27C498219BFFA0000BE23C /* ServerTrustPolicy.swift */; };
 		CE27C49C219C041E000BE23C /* ServerTrustPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE27C498219BFFA0000BE23C /* ServerTrustPolicy.swift */; };
 		CE27C49D219C041E000BE23C /* ServerTrustPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE27C498219BFFA0000BE23C /* ServerTrustPolicy.swift */; };
+		EE86C76C263AFE33005D2864 /* CommonLibrary.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = EE86C76B263AFE1F005D2864 /* CommonLibrary.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -144,6 +145,13 @@
 			proxyType = 1;
 			remoteGlobalIDString = 799396741D48B80D00086753;
 			remoteInfo = "FilesProvider OSX";
+		};
+		EE86C76A263AFE1F005D2864 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = EE86C766263AFE1F005D2864 /* CommonLibrary.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = EE625A9624B3041000C66201;
+			remoteInfo = CommonLibrary;
 		};
 /* End PBXContainerItemProxy section */
 
@@ -210,6 +218,7 @@
 		79D903551FAB647400D61D31 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		79F5745A1DFDB10A00179ABF /* FileObject.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = FileObject.swift; sourceTree = "<group>"; };
 		CE27C498219BFFA0000BE23C /* ServerTrustPolicy.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ServerTrustPolicy.swift; sourceTree = "<group>"; };
+		EE86C766263AFE1F005D2864 /* CommonLibrary.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = CommonLibrary.xcodeproj; path = ../CommonLibrary/CommonLibrary.xcodeproj; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -228,6 +237,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				EE86C76C263AFE33005D2864 /* CommonLibrary.framework in Frameworks */,
 				79BD63B81E2CC38D0035128C /* AVFoundation.framework in Frameworks */,
 				798D394020D01DA100FFB9EF /* CoreGraphics.framework in Frameworks */,
 				79BD63B21E2CC3350035128C /* ImageIO.framework in Frameworks */,
@@ -307,6 +317,7 @@
 				79D903521FAB647400D61D31 /* Tests */,
 				799396681D48B7F600086753 /* Products */,
 				791950F31DE58A5300B4426E /* Frameworks */,
+				EE86C766263AFE1F005D2864 /* CommonLibrary.xcodeproj */,
 			);
 			sourceTree = "<group>";
 		};
@@ -395,6 +406,14 @@
 			children = (
 			);
 			name = Extra;
+			sourceTree = "<group>";
+		};
+		EE86C767263AFE1F005D2864 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				EE86C76B263AFE1F005D2864 /* CommonLibrary.framework */,
+			);
+			name = Products;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -534,6 +553,12 @@
 			mainGroup = 7993965B1D48B7BF00086753;
 			productRefGroup = 799396681D48B7F600086753 /* Products */;
 			projectDirPath = "";
+			projectReferences = (
+				{
+					ProductGroup = EE86C767263AFE1F005D2864 /* Products */;
+					ProjectRef = EE86C766263AFE1F005D2864 /* CommonLibrary.xcodeproj */;
+				},
+			);
 			projectRoot = "";
 			targets = (
 				799396661D48B7F600086753 /* FilesProvider iOS */,
@@ -543,6 +568,16 @@
 			);
 		};
 /* End PBXProject section */
+
+/* Begin PBXReferenceProxy section */
+		EE86C76B263AFE1F005D2864 /* CommonLibrary.framework */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.framework;
+			path = CommonLibrary.framework;
+			remoteRef = EE86C76A263AFE1F005D2864 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+/* End PBXReferenceProxy section */
 
 /* Begin PBXResourcesBuildPhase section */
 		799396651D48B7F600086753 /* Resources */ = {
@@ -904,7 +939,7 @@
 				INFOPLIST_FILE = "Pod/Info-MacOS.plist";
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @loader_path/Frameworks";
-				MACOSX_DEPLOYMENT_TARGET = 10.11;
+				MACOSX_DEPLOYMENT_TARGET = 10.14;
 				MTL_ENABLE_DEBUG_INFO = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.mousavian.FilesProvider-OSX";
 				SDKROOT = macosx;
@@ -938,7 +973,7 @@
 				INFOPLIST_FILE = "Pod/Info-MacOS.plist";
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @loader_path/Frameworks";
-				MACOSX_DEPLOYMENT_TARGET = 10.11;
+				MACOSX_DEPLOYMENT_TARGET = 10.14;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.mousavian.FilesProvider-OSX";
 				SDKROOT = macosx;
