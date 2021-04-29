@@ -135,7 +135,6 @@
 		CE27C49B219BFFA0000BE23C /* ServerTrustPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE27C498219BFFA0000BE23C /* ServerTrustPolicy.swift */; };
 		CE27C49C219C041E000BE23C /* ServerTrustPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE27C498219BFFA0000BE23C /* ServerTrustPolicy.swift */; };
 		CE27C49D219C041E000BE23C /* ServerTrustPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE27C498219BFFA0000BE23C /* ServerTrustPolicy.swift */; };
-		EE86C76C263AFE33005D2864 /* CommonLibrary.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = EE86C76B263AFE1F005D2864 /* CommonLibrary.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -237,7 +236,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				EE86C76C263AFE33005D2864 /* CommonLibrary.framework in Frameworks */,
 				79BD63B81E2CC38D0035128C /* AVFoundation.framework in Frameworks */,
 				798D394020D01DA100FFB9EF /* CoreGraphics.framework in Frameworks */,
 				79BD63B21E2CC3350035128C /* ImageIO.framework in Frameworks */,
