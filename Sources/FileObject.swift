@@ -215,8 +215,8 @@ extension FileObject {
         
         // 추가
         result["title"] = self.name
-        //result["category"] = self.name.category
-        //result["writer"] = self.name.writer
+        result["category"] = self.name.category
+        result["writer"] = self.name.writer
         result["kMDItemDisplayName"] = self.name
         result["kMDItemContentCreationDate"] = self.creationDate
         result["modificationDate"] = self.modifiedDate

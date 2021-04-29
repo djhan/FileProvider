@@ -135,6 +135,9 @@
 		CE27C49B219BFFA0000BE23C /* ServerTrustPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE27C498219BFFA0000BE23C /* ServerTrustPolicy.swift */; };
 		CE27C49C219C041E000BE23C /* ServerTrustPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE27C498219BFFA0000BE23C /* ServerTrustPolicy.swift */; };
 		CE27C49D219C041E000BE23C /* ServerTrustPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE27C498219BFFA0000BE23C /* ServerTrustPolicy.swift */; };
+		EEDBD7D4263B7CDC00FE35D2 /* StringExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = EEDBD7D3263B7CDC00FE35D2 /* StringExtension.swift */; };
+		EEDBD7D5263B7CDC00FE35D2 /* StringExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = EEDBD7D3263B7CDC00FE35D2 /* StringExtension.swift */; };
+		EEDBD7D6263B7CDC00FE35D2 /* StringExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = EEDBD7D3263B7CDC00FE35D2 /* StringExtension.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -218,6 +221,7 @@
 		79F5745A1DFDB10A00179ABF /* FileObject.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = FileObject.swift; sourceTree = "<group>"; };
 		CE27C498219BFFA0000BE23C /* ServerTrustPolicy.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ServerTrustPolicy.swift; sourceTree = "<group>"; };
 		EE86C766263AFE1F005D2864 /* CommonLibrary.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = CommonLibrary.xcodeproj; path = ../CommonLibrary/CommonLibrary.xcodeproj; sourceTree = "<group>"; };
+		EEDBD7D3263B7CDC00FE35D2 /* StringExtension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StringExtension.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -302,6 +306,7 @@
 			children = (
 				793CCE291F4B8C5C00BC8288 /* FoundationExtensions.swift */,
 				793CCE2D1F4B8C7B00BC8288 /* HashMAC.swift */,
+				EEDBD7D3263B7CDC00FE35D2 /* StringExtension.swift */,
 			);
 			path = Extensions;
 			sourceTree = "<group>";
@@ -624,6 +629,7 @@
 				79BD63C51E2D17880035128C /* OneDriveFileProvider.swift in Sources */,
 				7924B1991D89DAE000589DB7 /* Element.swift in Sources */,
 				799396C81D48C02300086753 /* SMB2IOCtl.swift in Sources */,
+				EEDBD7D4263B7CDC00FE35D2 /* StringExtension.swift in Sources */,
 				799396D71D48C02300086753 /* SMB2Types.swift in Sources */,
 				7958155A1F478ED9003344DD /* HTTPFileProvider.swift in Sources */,
 				798654331E8874BC002FA550 /* FTPHelper.swift in Sources */,
@@ -669,6 +675,7 @@
 				79BD63C61E2D17880035128C /* OneDriveFileProvider.swift in Sources */,
 				7924B1B01D89F7DE00589DB7 /* FPSStreamTask.swift in Sources */,
 				7924B19A1D89DAE000589DB7 /* Element.swift in Sources */,
+				EEDBD7D5263B7CDC00FE35D2 /* StringExtension.swift in Sources */,
 				799396C91D48C02300086753 /* SMB2IOCtl.swift in Sources */,
 				7958155B1F478ED9003344DD /* HTTPFileProvider.swift in Sources */,
 				79F4678B1E8B80F200C91A85 /* FTPHelper.swift in Sources */,
@@ -714,6 +721,7 @@
 				79BD63C71E2D17880035128C /* OneDriveFileProvider.swift in Sources */,
 				7924B1B11D89F7DF00589DB7 /* FPSStreamTask.swift in Sources */,
 				7924B19B1D89DAE000589DB7 /* Element.swift in Sources */,
+				EEDBD7D6263B7CDC00FE35D2 /* StringExtension.swift in Sources */,
 				799396CA1D48C02300086753 /* SMB2IOCtl.swift in Sources */,
 				7958155C1F478ED9003344DD /* HTTPFileProvider.swift in Sources */,
 				79F4678C1E8B80F200C91A85 /* FTPHelper.swift in Sources */,
