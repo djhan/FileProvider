@@ -42,7 +42,7 @@ extension String {
         
         // 최초에 일치하는 값을 가져온다
         // 없는 경우 nil 반환
-        guard let resultFirstMatch = regex.firstMatch(in: self, options: [], range: NSRange(startIndex..., in: self)) else { return nil }
+        guard let resultFirstMatch = regex.firstMatch(in: self, options: [], range: NSRange(self.startIndex..., in: self)) else { return nil }
         
         // 카테고리가 아닌 경우, 첫 번째 결과를 그대로 반환
         guard information == 0 else {
@@ -55,7 +55,7 @@ extension String {
         // 숫자 및 기호로만 구성된 문자열을 가져오는 정규식
         let filteredRegex = try! NSRegularExpression(pattern: "^[0-9-=,.;:<>!@#$%^&*\\(\\)\\[\\]\\{\\}\\-\\+~`'\\\"]*$", options: .caseInsensitive)
         // 숫자 및 기호로만 구성된 문자열을 가져오는 데 실패한 경우, 첫 번째 결과를 그대로 반환
-        guard let resultSecondMatch = filteredRegex.firstMatch(in: firstResult, options: [], range: NSRange(startIndex..., in: firstResult)) else {
+        guard let resultSecondMatch = filteredRegex.firstMatch(in: firstResult, options: [], range: NSRange(firstResult.startIndex..., in: firstResult)) else {
             return firstResult
         }
         let secondResult = (firstResult as NSString).substring(with: resultSecondMatch.range)
