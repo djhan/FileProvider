@@ -148,14 +148,20 @@
 			remoteGlobalIDString = 799396741D48B80D00086753;
 			remoteInfo = "FilesProvider OSX";
 		};
-		EE86C76A263AFE1F005D2864 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = EE86C766263AFE1F005D2864 /* CommonLibrary.xcodeproj */;
-			proxyType = 2;
-			remoteGlobalIDString = EE625A9624B3041000C66201;
-			remoteInfo = CommonLibrary;
-		};
 /* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		EEC0CD3B2648BDD20091A6AA /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		7902C0851D61B56D00564440 /* RemoteSession.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = RemoteSession.swift; sourceTree = "<group>"; };
@@ -220,7 +226,6 @@
 		79D903551FAB647400D61D31 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		79F5745A1DFDB10A00179ABF /* FileObject.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = FileObject.swift; sourceTree = "<group>"; };
 		CE27C498219BFFA0000BE23C /* ServerTrustPolicy.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ServerTrustPolicy.swift; sourceTree = "<group>"; };
-		EE86C766263AFE1F005D2864 /* CommonLibrary.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = CommonLibrary.xcodeproj; path = ../CommonLibrary/CommonLibrary.xcodeproj; sourceTree = "<group>"; };
 		EEDBD7D3263B7CDC00FE35D2 /* StringExtension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StringExtension.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -305,8 +310,8 @@
 			isa = PBXGroup;
 			children = (
 				793CCE291F4B8C5C00BC8288 /* FoundationExtensions.swift */,
-				793CCE2D1F4B8C7B00BC8288 /* HashMAC.swift */,
 				EEDBD7D3263B7CDC00FE35D2 /* StringExtension.swift */,
+				793CCE2D1F4B8C7B00BC8288 /* HashMAC.swift */,
 			);
 			path = Extensions;
 			sourceTree = "<group>";
@@ -320,7 +325,6 @@
 				79D903521FAB647400D61D31 /* Tests */,
 				799396681D48B7F600086753 /* Products */,
 				791950F31DE58A5300B4426E /* Frameworks */,
-				EE86C766263AFE1F005D2864 /* CommonLibrary.xcodeproj */,
 			);
 			sourceTree = "<group>";
 		};
@@ -411,14 +415,6 @@
 			name = Extra;
 			sourceTree = "<group>";
 		};
-		EE86C767263AFE1F005D2864 /* Products */ = {
-			isa = PBXGroup;
-			children = (
-				EE86C76B263AFE1F005D2864 /* CommonLibrary.framework */,
-			);
-			name = Products;
-			sourceTree = "<group>";
-		};
 /* End PBXGroup section */
 
 /* Begin PBXHeadersBuildPhase section */
@@ -472,6 +468,7 @@
 				799396711D48B80D00086753 /* Frameworks */,
 				799396721D48B80D00086753 /* Headers */,
 				799396731D48B80D00086753 /* Resources */,
+				EEC0CD3B2648BDD20091A6AA /* Embed Frameworks */,
 			);
 			buildRules = (
 			);
@@ -556,12 +553,6 @@
 			mainGroup = 7993965B1D48B7BF00086753;
 			productRefGroup = 799396681D48B7F600086753 /* Products */;
 			projectDirPath = "";
-			projectReferences = (
-				{
-					ProductGroup = EE86C767263AFE1F005D2864 /* Products */;
-					ProjectRef = EE86C766263AFE1F005D2864 /* CommonLibrary.xcodeproj */;
-				},
-			);
 			projectRoot = "";
 			targets = (
 				799396661D48B7F600086753 /* FilesProvider iOS */,
@@ -571,16 +562,6 @@
 			);
 		};
 /* End PBXProject section */
-
-/* Begin PBXReferenceProxy section */
-		EE86C76B263AFE1F005D2864 /* CommonLibrary.framework */ = {
-			isa = PBXReferenceProxy;
-			fileType = wrapper.framework;
-			path = CommonLibrary.framework;
-			remoteRef = EE86C76A263AFE1F005D2864 /* PBXContainerItemProxy */;
-			sourceTree = BUILT_PRODUCTS_DIR;
-		};
-/* End PBXReferenceProxy section */
 
 /* Begin PBXResourcesBuildPhase section */
 		799396651D48B7F600086753 /* Resources */ = {

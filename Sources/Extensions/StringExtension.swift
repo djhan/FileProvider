@@ -34,16 +34,33 @@ extension String {
         switch information {
         // 카테고리 추출시
         case 0: regex = try! NSRegularExpression(pattern: "(?<=\\().*?(?=\\))", options: .caseInsensitive)
-            
         // 작가 추출시
         case 1: regex = try! NSRegularExpression(pattern: "(?<=\\[).*?(?=\\])", options: .caseInsensitive)
-            
         // 그 외의 경우 - 중지
         default: return nil
         }
+        
         // 최초에 일치하는 값을 가져온다
         // 없는 경우 nil 반환
         guard let resultFirstMatch = regex.firstMatch(in: self, options: [], range: NSRange(startIndex..., in: self)) else { return nil }
-        return (self as NSString).substring(with: resultFirstMatch.range)
+        
+        // 카테고리가 아닌 경우, 첫 번째 결과를 그대로 반환
+        guard information == 0 else {
+            return (self as NSString).substring(with: resultFirstMatch.range)
+        }
+        
+        // 카테고리인 경우
+        
+        let firstResult = (self as NSString).substring(with: resultFirstMatch.range)
+        // 숫자 및 기호로만 구성된 문자열을 가져오는 정규식
+        let filteredRegex = try! NSRegularExpression(pattern: "^[0-9-=,.;:<>!@#$%^&*\\(\\)\\[\\]\\{\\}\\-\\+~`'\\\"]*$", options: .caseInsensitive)
+        // 숫자 및 기호로만 구성된 문자열을 가져오는 데 실패한 경우, 첫 번째 결과를 그대로 반환
+        guard let resultSecondMatch = filteredRegex.firstMatch(in: firstResult, options: [], range: NSRange(startIndex..., in: firstResult)) else {
+            return firstResult
+        }
+        let secondResult = (firstResult as NSString).substring(with: resultSecondMatch.range)
+        // 숫자 및 기호로만 구성된 문자열 길이와 괄호 안 문자열의 길이가 같은 경우, 숫자 및 기호로만 구성된 문자열로 판단, 실패 처리
+        if firstResult.count == secondResult.count { return nil }
+        return firstResult
     }
 }
