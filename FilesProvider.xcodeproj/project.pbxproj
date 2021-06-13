@@ -148,6 +148,27 @@
 			remoteGlobalIDString = 799396741D48B80D00086753;
 			remoteInfo = "FilesProvider OSX";
 		};
+		EE0855FA26762747009BCA8D /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = EE0855F426762746009BCA8D /* FLOPageViewController.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 13773EB81C4E936A003FF521;
+			remoteInfo = FLOPageViewControllerSample;
+		};
+		EE0855FC26762747009BCA8D /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = EE0855F426762746009BCA8D /* FLOPageViewController.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 13773EC91C4E936A003FF521;
+			remoteInfo = FLOPageViewControllerUITests;
+		};
+		EE0855FE26762747009BCA8D /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = EE0855F426762746009BCA8D /* FLOPageViewController.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 138929311F70075200DE6DFB;
+			remoteInfo = FLOPageViewController;
+		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -226,6 +247,7 @@
 		79D903551FAB647400D61D31 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		79F5745A1DFDB10A00179ABF /* FileObject.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = FileObject.swift; sourceTree = "<group>"; };
 		CE27C498219BFFA0000BE23C /* ServerTrustPolicy.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ServerTrustPolicy.swift; sourceTree = "<group>"; };
+		EE0855F426762746009BCA8D /* FLOPageViewController.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = FLOPageViewController.xcodeproj; path = ../FLOPageViewController/FLOPageViewController.xcodeproj; sourceTree = "<group>"; };
 		EEDBD7D3263B7CDC00FE35D2 /* StringExtension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StringExtension.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -319,6 +341,7 @@
 		7993965B1D48B7BF00086753 = {
 			isa = PBXGroup;
 			children = (
+				EE0855F426762746009BCA8D /* FLOPageViewController.xcodeproj */,
 				79E34A101E2AC6C600E1293B /* Extra */,
 				799396911D48C02300086753 /* Sources */,
 				7993968A1D48B8C700086753 /* Pod */,
@@ -413,6 +436,16 @@
 			children = (
 			);
 			name = Extra;
+			sourceTree = "<group>";
+		};
+		EE0855F526762746009BCA8D /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				EE0855FB26762747009BCA8D /* FLOPageViewControllerSample.app */,
+				EE0855FD26762747009BCA8D /* FLOPageViewControllerUITests.xctest */,
+				EE0855FF26762747009BCA8D /* FLOPageViewController.framework */,
+			);
+			name = Products;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -553,6 +586,12 @@
 			mainGroup = 7993965B1D48B7BF00086753;
 			productRefGroup = 799396681D48B7F600086753 /* Products */;
 			projectDirPath = "";
+			projectReferences = (
+				{
+					ProductGroup = EE0855F526762746009BCA8D /* Products */;
+					ProjectRef = EE0855F426762746009BCA8D /* FLOPageViewController.xcodeproj */;
+				},
+			);
 			projectRoot = "";
 			targets = (
 				799396661D48B7F600086753 /* FilesProvider iOS */,
@@ -562,6 +601,30 @@
 			);
 		};
 /* End PBXProject section */
+
+/* Begin PBXReferenceProxy section */
+		EE0855FB26762747009BCA8D /* FLOPageViewControllerSample.app */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.application;
+			path = FLOPageViewControllerSample.app;
+			remoteRef = EE0855FA26762747009BCA8D /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		EE0855FD26762747009BCA8D /* FLOPageViewControllerUITests.xctest */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.cfbundle;
+			path = FLOPageViewControllerUITests.xctest;
+			remoteRef = EE0855FC26762747009BCA8D /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		EE0855FF26762747009BCA8D /* FLOPageViewController.framework */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.framework;
+			path = FLOPageViewController.framework;
+			remoteRef = EE0855FE26762747009BCA8D /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+/* End PBXReferenceProxy section */
 
 /* Begin PBXResourcesBuildPhase section */
 		799396651D48B7F600086753 /* Resources */ = {
