@@ -8,8 +8,6 @@
 
 import Foundation
 
-let encodingEUCKR = CFStringConvertEncodingToNSStringEncoding(0x0422)
-
 internal extension FTPFileProvider {
     func execute(command: String, on task: FileProviderStreamTask, minLength: Int = 4,
                  afterSend: ((_ error: Error?) -> Void)? = nil,
@@ -46,7 +44,8 @@ internal extension FTPFileProvider {
                 return
             }
             
-            if let data = data, let response = String(data: data, encoding: .utf8) {
+            if let data = data,
+               let response = String(data: data, encoding: .utf8) {
                 let lines = response.components(separatedBy: "\n").compactMap { $0.isEmpty ? nil : $0.trimmingCharacters(in: .whitespacesAndNewlines) }
                 if let last = lines.last, last.hasPrefix("1") {
                     // 1XX: Need to wait for some other response
@@ -152,7 +151,8 @@ internal extension FTPFileProvider {
                     throw error
                 }
                 
-                guard let data = data, let response = String(data: data, encoding: .utf8) else {
+                guard let data = data,
+                        let response = String(data: data, encoding: .utf8) else {
                     throw URLError(.cannotParseResponse, url: strongSelf.url(of: ""))
                 }
                 
@@ -443,22 +443,23 @@ internal extension FTPFileProvider {
                             throw URLError(.timedOut, url: strongSelf.url(of: path))
                         }
                     }
-
+                    /*
                     guard let dataResponse = String(data: finalData, encoding: .utf8) else {
                         throw URLError(.badServerResponse, url: strongSelf.url(of: path))
                     }
-                    /*
+                     */
+                    // 인코딩 방식이 utf-8 / ascii 방식이 아닌 경우
+                    if let finalEncoding = finalData.stringEncoding,
+                       finalEncoding != .utf8,
+                       finalEncoding != .ascii {
+                        strongSelf.encoding = finalEncoding
+                    }
                     var dataResponse: String
-                    if let _dataResponse = String(data: finalData, encoding: .utf8) {
-                        dataResponse = _dataResponse
-                    }
-                    else if let _dataResponse = String(data: finalData, encoding: String.Encoding.init(rawValue: encodingEUCKR)) {
-                        dataResponse = _dataResponse
-                    }
-                    else {
+                    guard let _dataResponse = String(data: finalData, encoding: strongSelf.encoding) else {
                         throw URLError(.badServerResponse, url: strongSelf.url(of: path))
                     }
-                     */
+                        
+                    dataResponse = _dataResponse
 
                     let contents: [String] = dataResponse.components(separatedBy: "\n")
                         .compactMap({ $0.trimmingCharacters(in: .whitespacesAndNewlines) })

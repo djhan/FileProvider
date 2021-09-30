@@ -29,6 +29,9 @@ open class FTPFileProvider: NSObject, FileProviderBasicRemote, FileProviderOpera
     open class var type: String { return "FTP" }
     public let baseURL: URL?
     
+    /// 인코딩 방식
+    public var encoding: String.Encoding = .utf8
+    
     /// 에러 발생시 재시도 횟수
     //var tryErrorLimit: Int = 0
     
@@ -157,6 +160,7 @@ open class FTPFileProvider: NSObject, FileProviderBasicRemote, FileProviderOpera
         self.validatingCache       = aDecoder.decodeBool(forKey: "validatingCache")
         self.supportsRFC3659       = aDecoder.decodeBool(forKey: "supportsRFC3659")
         self.securedDataConnection = aDecoder.decodeBool(forKey: "securedDataConnection")
+        self.encoding              = String.Encoding.init(rawValue: UInt(aDecoder.decodeInteger(forKey: "encoding")))
     }
     
     public func encode(with aCoder: NSCoder) {
@@ -167,6 +171,7 @@ open class FTPFileProvider: NSObject, FileProviderBasicRemote, FileProviderOpera
         aCoder.encode(self.mode.rawValue, forKey: "mode")
         aCoder.encode(self.supportsRFC3659, forKey: "supportsRFC3659")
         aCoder.encode(self.securedDataConnection, forKey: "securedDataConnection")
+        aCoder.encode(self.encoding.rawValue, forKey: "encoding")
     }
     
     public static var supportsSecureCoding: Bool {
@@ -181,6 +186,7 @@ open class FTPFileProvider: NSObject, FileProviderBasicRemote, FileProviderOpera
         copy.validatingCache = self.validatingCache
         copy.securedDataConnection = self.securedDataConnection
         copy.supportsRFC3659 = self.supportsRFC3659
+        copy.encoding = self.encoding
         return copy
     }
     
