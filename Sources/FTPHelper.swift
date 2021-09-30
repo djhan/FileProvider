@@ -14,7 +14,8 @@ internal extension FTPFileProvider {
                  completionHandler: @escaping (_ response: String?, _ error: Error?) -> Void) {
         let timeout = session.configuration.timeoutIntervalForRequest
         let terminalcommand = command + "\r\n"
-        task.write(terminalcommand.data(using: .utf8)!, timeout: timeout) { [weak self] (error) in
+        //task.write(terminalcommand.data(using: .utf8)!, timeout: timeout) { [weak self] (error) in
+        task.write(terminalcommand.data(using: self.encoding)!, timeout: timeout) { [weak self] (error) in
             guard let strongSelf = self else {
                 return completionHandler(nil, FileProviderFTPError.unknownError())
             }
@@ -45,7 +46,8 @@ internal extension FTPFileProvider {
             }
             
             if let data = data,
-               let response = String(data: data, encoding: .utf8) {
+               //let response = String(data: data, encoding: .utf8) {
+               let response = String(data: data, encoding: strongSelf.encoding) {
                 let lines = response.components(separatedBy: "\n").compactMap { $0.isEmpty ? nil : $0.trimmingCharacters(in: .whitespacesAndNewlines) }
                 if let last = lines.last, last.hasPrefix("1") {
                     // 1XX: Need to wait for some other response
@@ -152,7 +154,8 @@ internal extension FTPFileProvider {
                 }
                 
                 guard let data = data,
-                        let response = String(data: data, encoding: .utf8) else {
+                        //let response = String(data: data, encoding: .utf8) else {
+                      let response = String(data: data, encoding: strongSelf.encoding) else {
                     throw URLError(.cannotParseResponse, url: strongSelf.url(of: ""))
                 }
                 
@@ -443,23 +446,10 @@ internal extension FTPFileProvider {
                             throw URLError(.timedOut, url: strongSelf.url(of: path))
                         }
                     }
-                    /*
-                    guard let dataResponse = String(data: finalData, encoding: .utf8) else {
+                    //guard let dataResponse = String(data: finalData, encoding: .utf8) else {
+                    guard let dataResponse = String(data: finalData, encoding: strongSelf.encoding) else {
                         throw URLError(.badServerResponse, url: strongSelf.url(of: path))
                     }
-                     */
-                    // 인코딩 방식이 utf-8 / ascii 방식이 아닌 경우
-                    if let finalEncoding = finalData.stringEncoding,
-                       finalEncoding != .utf8,
-                       finalEncoding != .ascii {
-                        strongSelf.encoding = finalEncoding
-                    }
-                    var dataResponse: String
-                    guard let _dataResponse = String(data: finalData, encoding: strongSelf.encoding) else {
-                        throw URLError(.badServerResponse, url: strongSelf.url(of: path))
-                    }
-                        
-                    dataResponse = _dataResponse
 
                     let contents: [String] = dataResponse.components(separatedBy: "\n")
                         .compactMap({ $0.trimmingCharacters(in: .whitespacesAndNewlines) })

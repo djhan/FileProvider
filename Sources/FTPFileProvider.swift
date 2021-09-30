@@ -166,12 +166,12 @@ open class FTPFileProvider: NSObject, FileProviderBasicRemote, FileProviderOpera
             let passiveMode = aDecoder.decodeBool(forKey: "passiveMode")
             mode = passiveMode ? .passive : .active
         }
+        let encoding = String.Encoding.init(rawValue: UInt(aDecoder.decodeInteger(forKey: "encoding")))
         self.init(baseURL: baseURL, mode: mode, encoding: encoding, credential: aDecoder.decodeObject(of: URLCredential.self, forKey: "credential"))
         self.useCache              = aDecoder.decodeBool(forKey: "useCache")
         self.validatingCache       = aDecoder.decodeBool(forKey: "validatingCache")
         self.supportsRFC3659       = aDecoder.decodeBool(forKey: "supportsRFC3659")
         self.securedDataConnection = aDecoder.decodeBool(forKey: "securedDataConnection")
-        self.encoding              = String.Encoding.init(rawValue: UInt(aDecoder.decodeInteger(forKey: "encoding")))
     }
     
     public func encode(with aCoder: NSCoder) {
@@ -190,7 +190,7 @@ open class FTPFileProvider: NSObject, FileProviderBasicRemote, FileProviderOpera
     }
     
     open func copy(with zone: NSZone? = nil) -> Any {
-        let copy = FTPFileProvider(baseURL: self.baseURL!, mode: self.mode, encoding: encoding, credential: self.credential, cache: self.cache)!
+        let copy = FTPFileProvider(baseURL: self.baseURL!, mode: self.mode, encoding: self.encoding, credential: self.credential, cache: self.cache)!
         copy.delegate = self.delegate
         copy.fileOperationDelegate = self.fileOperationDelegate
         copy.useCache = self.useCache
