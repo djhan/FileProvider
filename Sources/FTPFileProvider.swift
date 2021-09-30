@@ -91,13 +91,18 @@ open class FTPFileProvider: NSObject, FileProviderBasicRemote, FileProviderOpera
      
      - Parameter baseURL: a url with `ftp://hostaddress/` format.
      - Parameter mode: FTP server data connection type.
+     - Parameter encoding: 인코딩 값
      - Parameter credential: a `URLCredential` object contains user and password.
      - Parameter cache: A URLCache to cache downloaded files and contents. (unimplemented for FTP and should be nil)
      
      - Important: Extended Passive or Active modes will fallback to normal Passive or Active modes if your server
          does not support extended modes.
      */
-    public init? (baseURL: URL, mode: Mode = .default, credential: URLCredential? = nil, cache: URLCache? = nil) {
+    public init? (baseURL: URL,
+                  mode: Mode = .default,
+                  encoding: String.Encoding = .utf8,
+                  credential: URLCredential? = nil,
+                  cache: URLCache? = nil) {
         guard ["ftp", "ftps", "ftpes"].contains(baseURL.uw_scheme.lowercased()) else {
             return nil
         }
@@ -115,6 +120,7 @@ open class FTPFileProvider: NSObject, FileProviderBasicRemote, FileProviderOpera
         self.cache = cache
         self.credential = credential
         self.supportsRFC3659 = true
+        self.encoding = encoding
         
         let queueLabel = "FileProvider.\(Swift.type(of: self).type)"
         dispatch_queue = DispatchQueue(label: queueLabel, attributes: .concurrent)
@@ -132,11 +138,16 @@ open class FTPFileProvider: NSObject, FileProviderBasicRemote, FileProviderOpera
      - Parameter baseURL: a url with `ftp://hostaddress/` format.
      - Parameter passive: FTP server data connection, `true` means passive connection (data connection created by client)
      and `false` means active connection (data connection created by server). Default is `true` (passive mode).
+     - Parameter encoding: 인코딩 값
      - Parameter credential: a `URLCredential` object contains user and password.
      - Parameter cache: A URLCache to cache downloaded files and contents. (unimplemented for FTP and should be nil)
      */
     @available(*, deprecated, renamed: "init(baseURL:mode:credential:cache:)")
-    public convenience init? (baseURL: URL, passive: Bool, credential: URLCredential? = nil, cache: URLCache? = nil) {
+    public convenience init? (baseURL: URL,
+                              passive: Bool,
+                              encoding: String.Encoding = .utf8,
+                              credential: URLCredential? = nil,
+                              cache: URLCache? = nil) {
         self.init(baseURL: baseURL, mode: passive ? .passive : .active, credential: credential, cache: cache)
     }
     
