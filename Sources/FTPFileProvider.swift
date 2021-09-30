@@ -100,7 +100,7 @@ open class FTPFileProvider: NSObject, FileProviderBasicRemote, FileProviderOpera
      */
     public init? (baseURL: URL,
                   mode: Mode = .default,
-                  encoding: String.Encoding = .utf8,
+                  encoding: String.Encoding,
                   credential: URLCredential? = nil,
                   cache: URLCache? = nil) {
         guard ["ftp", "ftps", "ftpes"].contains(baseURL.uw_scheme.lowercased()) else {
@@ -145,10 +145,10 @@ open class FTPFileProvider: NSObject, FileProviderBasicRemote, FileProviderOpera
     @available(*, deprecated, renamed: "init(baseURL:mode:credential:cache:)")
     public convenience init? (baseURL: URL,
                               passive: Bool,
-                              encoding: String.Encoding = .utf8,
+                              encoding: String.Encoding,
                               credential: URLCredential? = nil,
                               cache: URLCache? = nil) {
-        self.init(baseURL: baseURL, mode: passive ? .passive : .active, credential: credential, cache: cache)
+        self.init(baseURL: baseURL, mode: passive ? .passive : .active, encoding: encoding, credential: credential, cache: cache)
     }
     
     public required convenience init?(coder aDecoder: NSCoder) {
@@ -166,7 +166,7 @@ open class FTPFileProvider: NSObject, FileProviderBasicRemote, FileProviderOpera
             let passiveMode = aDecoder.decodeBool(forKey: "passiveMode")
             mode = passiveMode ? .passive : .active
         }
-        self.init(baseURL: baseURL, mode: mode, credential: aDecoder.decodeObject(of: URLCredential.self, forKey: "credential"))
+        self.init(baseURL: baseURL, mode: mode, encoding: encoding, credential: aDecoder.decodeObject(of: URLCredential.self, forKey: "credential"))
         self.useCache              = aDecoder.decodeBool(forKey: "useCache")
         self.validatingCache       = aDecoder.decodeBool(forKey: "validatingCache")
         self.supportsRFC3659       = aDecoder.decodeBool(forKey: "supportsRFC3659")
@@ -190,14 +190,13 @@ open class FTPFileProvider: NSObject, FileProviderBasicRemote, FileProviderOpera
     }
     
     open func copy(with zone: NSZone? = nil) -> Any {
-        let copy = FTPFileProvider(baseURL: self.baseURL!, mode: self.mode, credential: self.credential, cache: self.cache)!
+        let copy = FTPFileProvider(baseURL: self.baseURL!, mode: self.mode, encoding: encoding, credential: self.credential, cache: self.cache)!
         copy.delegate = self.delegate
         copy.fileOperationDelegate = self.fileOperationDelegate
         copy.useCache = self.useCache
         copy.validatingCache = self.validatingCache
         copy.securedDataConnection = self.securedDataConnection
         copy.supportsRFC3659 = self.supportsRFC3659
-        copy.encoding = self.encoding
         return copy
     }
     
