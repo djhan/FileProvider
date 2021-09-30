@@ -8,6 +8,8 @@
 
 import Foundation
 
+let encodingEUCKR = CFStringConvertEncodingToNSStringEncoding(0x0422)
+
 internal extension FTPFileProvider {
     func execute(command: String, on task: FileProviderStreamTask, minLength: Int = 4,
                  afterSend: ((_ error: Error?) -> Void)? = nil,
@@ -441,11 +443,23 @@ internal extension FTPFileProvider {
                             throw URLError(.timedOut, url: strongSelf.url(of: path))
                         }
                     }
-                    
+
                     guard let dataResponse = String(data: finalData, encoding: .utf8) else {
                         throw URLError(.badServerResponse, url: strongSelf.url(of: path))
                     }
-                    
+                    /*
+                    var dataResponse: String
+                    if let _dataResponse = String(data: finalData, encoding: .utf8) {
+                        dataResponse = _dataResponse
+                    }
+                    else if let _dataResponse = String(data: finalData, encoding: String.Encoding.init(rawValue: encodingEUCKR)) {
+                        dataResponse = _dataResponse
+                    }
+                    else {
+                        throw URLError(.badServerResponse, url: strongSelf.url(of: path))
+                    }
+                     */
+
                     let contents: [String] = dataResponse.components(separatedBy: "\n")
                         .compactMap({ $0.trimmingCharacters(in: .whitespacesAndNewlines) })
                     success_lock.try()

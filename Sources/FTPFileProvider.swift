@@ -1001,6 +1001,7 @@ open class FTPFileProvider: NSObject, FileProviderBasicRemote, FileProviderOpera
                     return
                 }
 
+                print("FTPFileProvider>contents(path:offfset:length:completionHandler:): 취소 여부 = \(progress.isCancelled)")
                 if let error = error {
                     // 재시도 확인
                     if checkRetry(error) == true { return }
