@@ -54,29 +54,49 @@ open class FTPFileProvider: NSObject, FileProviderBasicRemote, FileProviderOpera
     
     /// Determine either FTP session is in passive or active mode.
     public let mode: Mode
-    
+    /**
+     내부 프로퍼티 동기화 처리를 위한 NSLock
+     - Stack Overflow의 [동기화 관련 질답](https://stackoverflow.com/questions/43561169/trying-to-understand-asynchronous-operation-subclass) 참고
+     */
+    private let stateLock = NSLock()
+
     fileprivate var _session: URLSession!
     internal var sessionDelegate: SessionDelegate?
     public var session: URLSession {
         get {
-            if _session == nil {
-                self.sessionDelegate = SessionDelegate(fileProvider: self)
-                let config = URLSessionConfiguration.default
-                _session = URLSession(configuration: config, delegate: sessionDelegate as URLSessionDelegate?, delegateQueue: self.operation_queue)
-                _session.sessionDescription = UUID().uuidString
-                initEmptySessionHandler(_session.sessionDescription!)
+            self.stateLock.withCriticalScope { [weak self] () -> URLSession in
+                guard let strongSelf = self else {
+                    print("FTPFileProvider>session: StrongSelf가 nil, 더미값 반환")
+                    return URLSession(configuration: URLSessionConfiguration.default, delegate: sessionDelegate as URLSessionDelegate?, delegateQueue: nil)
+                }
+                if strongSelf._session == nil {
+                    strongSelf.sessionDelegate = SessionDelegate(fileProvider: strongSelf)
+                    let config = URLSessionConfiguration.default
+                    strongSelf._session = URLSession(configuration: config, delegate: sessionDelegate as URLSessionDelegate?, delegateQueue: strongSelf.operation_queue)
+                    strongSelf._session?.sessionDescription = UUID().uuidString
+                    /**
+                     # Error 발생
+                     - 2022/02/06
+                     - Fatal Error: Unexpectedly found nil while unwrapping an Optional value
+                     - 원인은 잘 모르겠지만 get 하는 도중, nil로 릴리즈되는 경우가 있는 게 아닌가 추측된다
+                     */
+                    initEmptySessionHandler(strongSelf._session!.sessionDescription!)
+                }
+                return strongSelf._session
             }
-            return _session
         }
         
         set {
-            assert(newValue.delegate is SessionDelegate, "session instances should have a SessionDelegate instance as delegate.")
-            _session = newValue
-            if _session.sessionDescription?.isEmpty ?? true {
-                _session.sessionDescription = UUID().uuidString
+            self.stateLock.withCriticalScope { [weak self] () -> Void in
+                guard let strongSelf = self else { return }
+                assert(newValue.delegate is SessionDelegate, "session instances should have a SessionDelegate instance as delegate.")
+                strongSelf._session = newValue
+                if strongSelf._session?.sessionDescription?.isEmpty ?? true {
+                    strongSelf._session?.sessionDescription = UUID().uuidString
+                }
+                strongSelf.sessionDelegate = newValue.delegate as? SessionDelegate
+                initEmptySessionHandler(strongSelf._session!.sessionDescription!)
             }
-            self.sessionDelegate = newValue.delegate as? SessionDelegate
-            initEmptySessionHandler(_session.sessionDescription!)
         }
     }
     

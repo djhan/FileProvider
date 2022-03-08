@@ -141,6 +141,9 @@
 		EEDBD7D4263B7CDC00FE35D2 /* StringExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = EEDBD7D3263B7CDC00FE35D2 /* StringExtension.swift */; };
 		EEDBD7D5263B7CDC00FE35D2 /* StringExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = EEDBD7D3263B7CDC00FE35D2 /* StringExtension.swift */; };
 		EEDBD7D6263B7CDC00FE35D2 /* StringExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = EEDBD7D3263B7CDC00FE35D2 /* StringExtension.swift */; };
+		EEED485627AF8D4600335ED6 /* NSLockExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = EEED485527AF8D4600335ED6 /* NSLockExtension.swift */; };
+		EEED485727AF8D4600335ED6 /* NSLockExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = EEED485527AF8D4600335ED6 /* NSLockExtension.swift */; };
+		EEED485827AF8D4600335ED6 /* NSLockExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = EEED485527AF8D4600335ED6 /* NSLockExtension.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -216,9 +219,9 @@
 		79D903551FAB647400D61D31 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		79F5745A1DFDB10A00179ABF /* FileObject.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = FileObject.swift; sourceTree = "<group>"; };
 		CE27C498219BFFA0000BE23C /* ServerTrustPolicy.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ServerTrustPolicy.swift; sourceTree = "<group>"; };
-		EE9F3B772705539800E60B3B /* CommonLibrary.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = CommonLibrary.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		EE9F3B86270558A400E60B3B /* DataExtension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataExtension.swift; sourceTree = "<group>"; };
 		EEDBD7D3263B7CDC00FE35D2 /* StringExtension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StringExtension.swift; sourceTree = "<group>"; };
+		EEED485527AF8D4600335ED6 /* NSLockExtension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NSLockExtension.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -269,7 +272,6 @@
 		791950F31DE58A5300B4426E /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				EE9F3B772705539800E60B3B /* CommonLibrary.framework */,
 				798D393F20D01DA000FFB9EF /* CoreGraphics.framework */,
 				79BD63C11E2CC3D30035128C /* AVFoundation.framework */,
 				79BD63BF1E2CC3CD0035128C /* CoreGraphics.framework */,
@@ -306,6 +308,7 @@
 				EEDBD7D3263B7CDC00FE35D2 /* StringExtension.swift */,
 				EE9F3B86270558A400E60B3B /* DataExtension.swift */,
 				793CCE2D1F4B8C7B00BC8288 /* HashMAC.swift */,
+				EEED485527AF8D4600335ED6 /* NSLockExtension.swift */,
 			);
 			path = Extensions;
 			sourceTree = "<group>";
@@ -625,6 +628,7 @@
 				799396C21D48C02300086753 /* SMB2FileHandle.swift in Sources */,
 				793CCE2E1F4B8C7B00BC8288 /* HashMAC.swift in Sources */,
 				799396CB1D48C02300086753 /* SMB2Query.swift in Sources */,
+				EEED485627AF8D4600335ED6 /* NSLockExtension.swift in Sources */,
 				799396AA1D48C02300086753 /* DropboxFileProvider.swift in Sources */,
 				79BD638C1E2CC2300035128C /* ExtendedLocalFileProvider.swift in Sources */,
 				7924B1B31D89FD6400589DB7 /* SMBClient.swift in Sources */,
@@ -672,6 +676,7 @@
 				799396C31D48C02300086753 /* SMB2FileHandle.swift in Sources */,
 				793CCE2F1F4B8C7B00BC8288 /* HashMAC.swift in Sources */,
 				799396CC1D48C02300086753 /* SMB2Query.swift in Sources */,
+				EEED485727AF8D4600335ED6 /* NSLockExtension.swift in Sources */,
 				7924B1AD1D89F7D800589DB7 /* SMBClient.swift in Sources */,
 				79BD638D1E2CC2300035128C /* ExtendedLocalFileProvider.swift in Sources */,
 				799396AB1D48C02300086753 /* DropboxFileProvider.swift in Sources */,
@@ -719,6 +724,7 @@
 				799396C41D48C02300086753 /* SMB2FileHandle.swift in Sources */,
 				793CCE301F4B8C7B00BC8288 /* HashMAC.swift in Sources */,
 				799396CD1D48C02300086753 /* SMB2Query.swift in Sources */,
+				EEED485827AF8D4600335ED6 /* NSLockExtension.swift in Sources */,
 				7924B1AE1D89F7D900589DB7 /* SMBClient.swift in Sources */,
 				79BD638E1E2CC2300035128C /* ExtendedLocalFileProvider.swift in Sources */,
 				799396AC1D48C02300086753 /* DropboxFileProvider.swift in Sources */,
