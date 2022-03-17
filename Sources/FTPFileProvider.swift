@@ -126,8 +126,12 @@ open class FTPFileProvider: NSObject, FileProviderBasicRemote, FileProviderOpera
         guard ["ftp", "ftps", "ftpes"].contains(baseURL.uw_scheme.lowercased()) else {
             return nil
         }
-        guard baseURL.host != nil else { return nil }
-        var urlComponents = URLComponents(url: baseURL, resolvingAgainstBaseURL: true)!
+        // 에러 회피책
+        guard baseURL.host != nil,
+              var urlComponents = URLComponents(url: baseURL, resolvingAgainstBaseURL: true) else {
+                  return nil
+              }
+        //var urlComponents = URLComponents(url: baseURL, resolvingAgainstBaseURL: true)!
         let defaultPort: Int = baseURL.scheme?.lowercased() == "ftps" ? 990 : 21
         urlComponents.port = urlComponents.port ?? defaultPort
         urlComponents.scheme = urlComponents.scheme ?? "ftp"
