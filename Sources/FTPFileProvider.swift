@@ -606,13 +606,9 @@ open class FTPFileProvider: NSObject, FileProviderBasicRemote, FileProviderOpera
                     return
                 }
                 
-                var result = [FileObject]()
                 let foundFiles = items.filter { query.evaluate(with: $0.mapPredicate()) }
-                result.append(contentsOf: foundFiles)
-                // 중간 완료 핸들러 반환
-                foundItemsHandler?(foundFiles)
                 // 최종 완료 핸들러 반환
-                completionHandler(result, nil)
+                completionHandler(foundFiles, nil)
             })
         }
         return progress
@@ -627,26 +623,8 @@ open class FTPFileProvider: NSObject, FileProviderBasicRemote, FileProviderOpera
                           query: NSPredicate,
                           foundItemHandler: ((FileObject) -> Void)?,
                           completionHandler: @escaping (_ files: [FileObject], _ error: Error?) -> Void) -> Progress? {
-        //let progress = Progress(totalUnitCount: -1)
-        if recursive {
-            return self.recursiveList(path: path, useMLST: true, foundItemsHandler: { items in
-                if let foundItemHandler = foundItemHandler {
-                    for item in items where query.evaluate(with: item.mapPredicate()) {
-                        foundItemHandler(item)
-                    }
-                    //progress.totalUnitCount = Int64(items.count)
-                }
-            }, completionHandler: { files, error in
-                if let error = error {
-                    completionHandler([], error)
-                    return
-                }
-                
-                let foundFiles = files.filter { query.evaluate(with: $0.mapPredicate()) }
-                completionHandler(foundFiles, nil)
-            })
-        } else {
-            //self.contentsOfDirectory(path: path, completionHandler: { (items, error) in
+        guard recursive == true else {
+            // 재귀적 검색이 불필요한 경우
             return self.contentsOfDirectoryWithProgress(path: path, completionHandler: { (items, error) in
                 if let error = error {
                     completionHandler([], error)
@@ -662,7 +640,22 @@ open class FTPFileProvider: NSObject, FileProviderBasicRemote, FileProviderOpera
             })
         }
         
-        //return progress
+        //재귀적 검색 실행시
+        return self.recursiveList(path: path, useMLST: true, foundItemsHandler: { items in
+            if let foundItemHandler = foundItemHandler {
+                for item in items where query.evaluate(with: item.mapPredicate()) {
+                    foundItemHandler(item)
+                }
+            }
+        }, completionHandler: { files, error in
+            if let error = error {
+                completionHandler([], error)
+                return
+            }
+            
+            let foundFiles = files.filter { query.evaluate(with: $0.mapPredicate()) }
+            completionHandler(foundFiles, nil)
+        })
     }
     
     open func url(of path: String?) -> URL {

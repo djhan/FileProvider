@@ -560,6 +560,7 @@ internal extension FTPFileProvider {
                 return completionHandler([], FileProviderFTPError.init(message: "Aborted by user", path: path))
             }
             
+            print("FTPHelper>recursiveList(path:): \(path) >> 발견된 아이템 갯수 = \(files.count)")
             recursiveResults.append(contentsOf: files)
             foundItemsHandler?(files)
             
@@ -581,8 +582,10 @@ internal extension FTPFileProvider {
                     return completionHandler([], FileProviderFTPError.init(message: "Aborted by user", path: dir.path))
                 }
                 // 하위 프로그레스로 등록
+                print("FTPHelper>recursiveList(path:): \(dir.path) >> 하위 경로 탐색")
                 let subProgress = strongSelf.recursiveList(path: dir.path, useMLST: useMLST, foundItemsHandler: foundItemsHandler) { (results, error) in
                     // 결과 추가/중간 결과 반환을 여기서 중복 처리할 필요는 없다
+                    recursiveResults.append(contentsOf: results)
                     // 세마포어 해제
                     semaphore?.signal()
                 }
@@ -594,6 +597,7 @@ internal extension FTPFileProvider {
                 //print("FTPHelper>recursiveList(path:): subProgress 진행상황 = \(subProgress?.fractionCompleted) ?? 0")
             }
 
+            print("FTPHelper>recursiveList(path:): \(path) >> 목록 갯수 = \(recursiveResults.count)")
             // 성공 종료 처리
             completionHandler(recursiveResults, nil)
         })
