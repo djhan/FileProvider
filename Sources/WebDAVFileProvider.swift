@@ -83,7 +83,16 @@ open class WebDAVFileProvider: HTTPFileProvider, FileProviderSharing {
         let query = NSPredicate(format: "TRUEPREDICATE")
         _ = searchFiles(path: path, recursive: false, query: query, including: [], foundItemHandler: nil, completionHandler: completionHandler)
     }
-    
+    /**
+     디렉토리 목록 생성
+     - Returns: Progress 반환
+     */
+    @discardableResult
+    open func contentsOfDirectoryWithProgress(path: String, completionHandler: @escaping ([FileObject], Error?) -> Void) -> Progress? {
+        let query = NSPredicate(format: "TRUEPREDICATE")
+        return searchFiles(path: path, recursive: false, query: query, including: [], foundItemHandler: nil, completionHandler: completionHandler)
+    }
+
     /**
      Returns an Array of `FileObject`s identifying the the directory entries via asynchronous completion handler.
      
