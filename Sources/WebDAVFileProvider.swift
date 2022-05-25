@@ -37,12 +37,17 @@ open class WebDAVFileProvider: HTTPFileProvider, FileProviderSharing {
        - credential: An `URLCredential` object with `user` and `password`.
        - cache: A URLCache to cache downloaded files and contents.
     */
-    public init? (baseURL: URL, credential: URLCredential?, cache: URLCache? = nil) {
+    public init? (baseURL: URL,
+                  credential: URLCredential?,
+                  credentialType: URLRequest.AuthenticationType,
+                  cache: URLCache? = nil) {
         if  !["http", "https"].contains(baseURL.uw_scheme.lowercased()) {
             return nil
         }
         let refinedBaseURL = (baseURL.absoluteString.hasSuffix("/") ? baseURL : baseURL.appendingPathComponent(""))
         super.init(baseURL: refinedBaseURL.absoluteURL, credential: credential, cache: cache)
+        
+        self.credentialType = credentialType
     }
     
     public required convenience init?(coder aDecoder: NSCoder) {
@@ -53,14 +58,21 @@ open class WebDAVFileProvider: HTTPFileProvider, FileProviderSharing {
             }
             return nil
         }
+        guard let credentialTypeValue = aDecoder.decodeObject(forKey: "credentialType") as? Int else {
+            return nil
+        }
         self.init(baseURL: baseURL,
-                  credential: aDecoder.decodeObject(of: URLCredential.self, forKey: "credential"))
+                  credential: aDecoder.decodeObject(of: URLCredential.self, forKey: "credential"),
+                  credentialType: URLRequest.AuthenticationType.init(rawValue: credentialTypeValue) ?? .basic)
         self.useCache        = aDecoder.decodeBool(forKey: "useCache")
         self.validatingCache = aDecoder.decodeBool(forKey: "validatingCache")
     }
     
     override open func copy(with zone: NSZone? = nil) -> Any {
-        let copy = WebDAVFileProvider(baseURL: self.baseURL!, credential: self.credential, cache: self.cache)!
+        let copy = WebDAVFileProvider(baseURL: self.baseURL!,
+                                      credential: self.credential,
+                                      credentialType: self.credentialType,
+                                      cache: self.cache)!
         copy.delegate = self.delegate
         copy.fileOperationDelegate = self.fileOperationDelegate
         copy.useCache = self.useCache
@@ -68,6 +80,14 @@ open class WebDAVFileProvider: HTTPFileProvider, FileProviderSharing {
         return copy
     }
     
+    public override func encode(with aCoder: NSCoder) {
+        aCoder.encode(self.baseURL, forKey: "baseURL")
+        aCoder.encode(self.credential, forKey: "credential")
+        aCoder.encode(self.credentialType.rawValue, forKey: "credentialType")
+        aCoder.encode(self.useCache, forKey: "useCache")
+        aCoder.encode(self.validatingCache, forKey: "validatingCache")
+    }
+
     /**
      Returns an Array of `FileObject`s identifying the the directory entries via asynchronous completion handler.
      

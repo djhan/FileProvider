@@ -119,15 +119,15 @@ internal extension URL {
 
 extension URLRequest {
     /// Defines HTTP Authentication method required to access
-    public enum AuthenticationType {
+    public enum AuthenticationType: Int {
         /// Basic method for authentication
-        case basic
+        case basic = 0
         /// Digest method for authentication
-        case digest
+        case digest = 1
         /// OAuth 1.0 method for authentication (OAuth)
-        case oAuth1
+        case oAuth1 = 2
         /// OAuth 2.0 method for authentication (Bearer)
-        case oAuth2
+        case oAuth2 = 3
     }
 }
 
