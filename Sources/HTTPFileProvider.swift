@@ -596,6 +596,9 @@ open class HTTPFileProvider: NSObject, FileProviderBasicRemote, FileProviderOper
         
         let task = session.dataTask(with: request)
         
+        /// # 주의사항
+        /// - EXC_BAD_ACCESS 발생. 동일한 다운로드 작업을 동시에 처리할 때 문제가 있는 것으로 판단됨
+        /// - 동기화 처리. 단, 문제가 생기지 않는지 확인 필요
         self.syncQueue.async(flags: .barrier) { [weak self] in
             guard let strongSelf = self else {
                 return completionHandler(nil)
