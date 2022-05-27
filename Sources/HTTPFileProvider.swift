@@ -72,6 +72,9 @@ open class HTTPFileProvider: NSObject, FileProviderBasicRemote, FileProviderOper
         return _longpollSession!
     }
     
+    /// 싱크 처리용 큐
+    private let syncQueue = DispatchQueue(label: "djhan.HTTPFileProvider.SyncQueue", attributes: .concurrent)
+
     #if os(macOS) || os(iOS) || os(tvOS)
     open var undoManager: UndoManager? = nil
     #endif
@@ -592,36 +595,44 @@ open class HTTPFileProvider: NSObject, FileProviderBasicRemote, FileProviderOper
         progress.setUserInfoObject(Progress.FileOperationKind.downloading, forKey: .fileOperationKindKey)
         
         let task = session.dataTask(with: request)
-        if let responseHandler = responseHandler {
-            responseCompletionHandlersForTasks[session.sessionDescription!]?[task.taskIdentifier] = { response in
-                responseHandler(response)
-            }
-        }
         
-        stream.open()
-        dataCompletionHandlersForTasks[session.sessionDescription!]?[task.taskIdentifier] = { [weak task, weak self] data in
-            guard !data.isEmpty else { return }
-            task.flatMap { self?.delegateNotify(operation, progress: Double($0.countOfBytesReceived) / Double($0.countOfBytesExpectedToReceive)) }
+        self.syncQueue.async(flags: .barrier) { [weak self] in
+            guard let strongSelf = self else {
+                return completionHandler(nil)
+            }
+         
+            if let responseHandler = responseHandler {
+                responseCompletionHandlersForTasks[strongSelf.session.sessionDescription!]?[task.taskIdentifier] = { response in
+                    responseHandler(response)
+                }
+            }
             
-            let result = (try? stream.write(data: data)) ?? -1
-            if result < 0 {
-                completionHandler(stream.streamError!)
-                self?.delegateNotify(operation, error: stream.streamError!)
-                task?.cancel()
+            stream.open()
+            dataCompletionHandlersForTasks[strongSelf.session.sessionDescription!]?[task.taskIdentifier] = { [weak task, weak self] data in
+                guard !data.isEmpty else { return }
+                task.flatMap { self?.delegateNotify(operation, progress: Double($0.countOfBytesReceived) / Double($0.countOfBytesExpectedToReceive)) }
+                
+                let result = (try? stream.write(data: data)) ?? -1
+                if result < 0 {
+                    completionHandler(stream.streamError!)
+                    self?.delegateNotify(operation, error: stream.streamError!)
+                    task?.cancel()
+                }
             }
+            
+            completionHandlersForTasks[strongSelf.session.sessionDescription!]?[task.taskIdentifier] = { error in
+                if error != nil {
+                    progress.cancel()
+                }
+                stream.close()
+                completionHandler(error)
+                strongSelf.delegateNotify(operation, error: error)
+            }
+            
+            task.taskDescription = operation.json
+            strongSelf.sessionDelegate?.observerProgress(of: task, using: progress, kind: .download)
         }
         
-        completionHandlersForTasks[session.sessionDescription!]?[task.taskIdentifier] = { error in
-            if error != nil {
-                progress.cancel()
-            }
-            stream.close()
-            completionHandler(error)
-            self.delegateNotify(operation, error: error)
-        }
-        
-        task.taskDescription = operation.json
-        sessionDelegate?.observerProgress(of: task, using: progress, kind: .download)
         progress.cancellationHandler = { [weak task] in
             task?.cancel()
         }
