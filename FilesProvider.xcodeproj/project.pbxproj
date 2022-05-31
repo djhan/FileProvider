@@ -136,9 +136,7 @@
 		CE27C49C219C041E000BE23C /* ServerTrustPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE27C498219BFFA0000BE23C /* ServerTrustPolicy.swift */; };
 		CE27C49D219C041E000BE23C /* ServerTrustPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE27C498219BFFA0000BE23C /* ServerTrustPolicy.swift */; };
 		EE5DA5782845E8270022F899 /* CommonLibrary.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = EE5DA5772845E8270022F899 /* CommonLibrary.framework */; };
-		EE5DA5792845E8270022F899 /* CommonLibrary.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = EE5DA5772845E8270022F899 /* CommonLibrary.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		EE5DA57C2845E82E0022F899 /* ExtendOperation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = EE5DA57B2845E82E0022F899 /* ExtendOperation.framework */; };
-		EE5DA57D2845E82E0022F899 /* ExtendOperation.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = EE5DA57B2845E82E0022F899 /* ExtendOperation.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		EE9F3B87270558A400E60B3B /* DataExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE9F3B86270558A400E60B3B /* DataExtension.swift */; };
 		EE9F3B88270558A400E60B3B /* DataExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE9F3B86270558A400E60B3B /* DataExtension.swift */; };
 		EE9F3B89270558A400E60B3B /* DataExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE9F3B86270558A400E60B3B /* DataExtension.swift */; };
@@ -187,21 +185,6 @@
 			remoteInfo = ExtendOperation;
 		};
 /* End PBXContainerItemProxy section */
-
-/* Begin PBXCopyFilesBuildPhase section */
-		EE5DA57A2845E8280022F899 /* Embed Frameworks */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = "";
-			dstSubfolderSpec = 10;
-			files = (
-				EE5DA57D2845E82E0022F899 /* ExtendOperation.framework in Embed Frameworks */,
-				EE5DA5792845E8270022F899 /* CommonLibrary.framework in Embed Frameworks */,
-			);
-			name = "Embed Frameworks";
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		7902C0851D61B56D00564440 /* RemoteSession.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = RemoteSession.swift; sourceTree = "<group>"; };
@@ -538,7 +521,6 @@
 				799396711D48B80D00086753 /* Frameworks */,
 				799396721D48B80D00086753 /* Headers */,
 				799396731D48B80D00086753 /* Resources */,
-				EE5DA57A2845E8280022F899 /* Embed Frameworks */,
 			);
 			buildRules = (
 			);
