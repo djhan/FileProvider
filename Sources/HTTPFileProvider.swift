@@ -79,7 +79,7 @@ open class HTTPFileProvider: NSObject,
     }
     
     /// 싱크 처리용 큐
-    //private let syncQueue = DispatchQueue(label: "djhan.HTTPFileProvider.SyncQueue", attributes: .concurrent)
+    private let syncQueue = DispatchQueue(label: "djhan.HTTPFileProvider.SyncQueue", attributes: .concurrent)
 
     #if os(macOS) || os(iOS) || os(tvOS)
     open var undoManager: UndoManager? = nil
