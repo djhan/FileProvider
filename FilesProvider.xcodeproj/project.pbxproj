@@ -135,8 +135,6 @@
 		CE27C49B219BFFA0000BE23C /* ServerTrustPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE27C498219BFFA0000BE23C /* ServerTrustPolicy.swift */; };
 		CE27C49C219C041E000BE23C /* ServerTrustPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE27C498219BFFA0000BE23C /* ServerTrustPolicy.swift */; };
 		CE27C49D219C041E000BE23C /* ServerTrustPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE27C498219BFFA0000BE23C /* ServerTrustPolicy.swift */; };
-		EE5DA5782845E8270022F899 /* CommonLibrary.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = EE5DA5772845E8270022F899 /* CommonLibrary.framework */; };
-		EE5DA57C2845E82E0022F899 /* ExtendOperation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = EE5DA57B2845E82E0022F899 /* ExtendOperation.framework */; };
 		EE9F3B87270558A400E60B3B /* DataExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE9F3B86270558A400E60B3B /* DataExtension.swift */; };
 		EE9F3B88270558A400E60B3B /* DataExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE9F3B86270558A400E60B3B /* DataExtension.swift */; };
 		EE9F3B89270558A400E60B3B /* DataExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE9F3B86270558A400E60B3B /* DataExtension.swift */; };
@@ -274,8 +272,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				EE5DA57C2845E82E0022F899 /* ExtendOperation.framework in Frameworks */,
-				EE5DA5782845E8270022F899 /* CommonLibrary.framework in Frameworks */,
 				79BD63B81E2CC38D0035128C /* AVFoundation.framework in Frameworks */,
 				798D394020D01DA100FFB9EF /* CoreGraphics.framework in Frameworks */,
 				79BD63B21E2CC3350035128C /* ImageIO.framework in Frameworks */,

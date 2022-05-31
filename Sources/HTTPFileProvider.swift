@@ -8,8 +8,6 @@
 
 import Foundation
 import Cocoa
-import CommonLibrary
-import ExtendOperation
 
 /**
  The abstract base class for all REST/Web based providers such as WebDAV, Dropbox, OneDrive, Google Drive, etc. and encapsulates basic
@@ -21,14 +19,7 @@ open class HTTPFileProvider: NSObject,
                              FileProviderBasicRemote,
                              FileProviderOperations,
                              FileProviderReadWrite,
-                             FileProviderReadWriteProgressive,
-                             SerialWorksConvertible {
-    
-    /// 작업 큐
-    /// - 동시작업 큐 개수는 1개로 제한
-    public var workQueue: OperationQueue? = OperationQueue.newQueue(withWorkCount: 1)
-    /// 큐 등록 가능 여부
-    public var allowRegisterSerialWork = true
+                             FileProviderReadWriteProgressive {
 
     open class var type: String { fatalError("HTTPFileProvider is an abstract class. Please implement \(#function) in subclass.") }
     public let baseURL: URL?
@@ -88,7 +79,7 @@ open class HTTPFileProvider: NSObject,
     }
     
     /// 싱크 처리용 큐
-    private let syncQueue = DispatchQueue(label: "djhan.HTTPFileProvider.SyncQueue", attributes: .concurrent)
+    //private let syncQueue = DispatchQueue(label: "djhan.HTTPFileProvider.SyncQueue", attributes: .concurrent)
 
     #if os(macOS) || os(iOS) || os(tvOS)
     open var undoManager: UndoManager? = nil
