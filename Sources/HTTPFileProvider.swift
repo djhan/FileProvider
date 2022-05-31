@@ -7,6 +7,9 @@
 //
 
 import Foundation
+import Cocoa
+import CommonLibrary
+import ExtendOperation
 
 /**
  The abstract base class for all REST/Web based providers such as WebDAV, Dropbox, OneDrive, Google Drive, etc. and encapsulates basic
@@ -14,7 +17,19 @@ import Foundation
  
  No instance of this class should (and can) be created. Use derived classes instead. It leads to a crash with `fatalError()`.
  */
-open class HTTPFileProvider: NSObject, FileProviderBasicRemote, FileProviderOperations, FileProviderReadWrite, FileProviderReadWriteProgressive {
+open class HTTPFileProvider: NSObject,
+                             FileProviderBasicRemote,
+                             FileProviderOperations,
+                             FileProviderReadWrite,
+                             FileProviderReadWriteProgressive,
+                             SerialWorksConvertible {
+    
+    /// 작업 큐
+    /// - 동시작업 큐 개수는 1개로 제한
+    public var workQueue: OperationQueue? = OperationQueue.newQueue(withWorkCount: 1)
+    /// 큐 등록 가능 여부
+    public var allowRegisterSerialWork = true
+
     open class var type: String { fatalError("HTTPFileProvider is an abstract class. Please implement \(#function) in subclass.") }
     public let baseURL: URL?
     open var dispatch_queue: DispatchQueue
@@ -340,7 +355,6 @@ open class HTTPFileProvider: NSObject, FileProviderBasicRemote, FileProviderOper
             } catch {
                 completionHandler(nil, error)
             }
-            
         }
     }
     

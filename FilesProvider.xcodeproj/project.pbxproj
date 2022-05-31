@@ -135,6 +135,10 @@
 		CE27C49B219BFFA0000BE23C /* ServerTrustPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE27C498219BFFA0000BE23C /* ServerTrustPolicy.swift */; };
 		CE27C49C219C041E000BE23C /* ServerTrustPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE27C498219BFFA0000BE23C /* ServerTrustPolicy.swift */; };
 		CE27C49D219C041E000BE23C /* ServerTrustPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE27C498219BFFA0000BE23C /* ServerTrustPolicy.swift */; };
+		EE5DA5782845E8270022F899 /* CommonLibrary.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = EE5DA5772845E8270022F899 /* CommonLibrary.framework */; };
+		EE5DA5792845E8270022F899 /* CommonLibrary.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = EE5DA5772845E8270022F899 /* CommonLibrary.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		EE5DA57C2845E82E0022F899 /* ExtendOperation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = EE5DA57B2845E82E0022F899 /* ExtendOperation.framework */; };
+		EE5DA57D2845E82E0022F899 /* ExtendOperation.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = EE5DA57B2845E82E0022F899 /* ExtendOperation.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		EE9F3B87270558A400E60B3B /* DataExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE9F3B86270558A400E60B3B /* DataExtension.swift */; };
 		EE9F3B88270558A400E60B3B /* DataExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE9F3B86270558A400E60B3B /* DataExtension.swift */; };
 		EE9F3B89270558A400E60B3B /* DataExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE9F3B86270558A400E60B3B /* DataExtension.swift */; };
@@ -154,7 +158,50 @@
 			remoteGlobalIDString = 799396741D48B80D00086753;
 			remoteInfo = "FilesProvider OSX";
 		};
+		EE5DA5822845E8470022F899 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = EE5DA57E2845E8470022F899 /* ExtendOperation.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = EE68CD592293DD190017C4E5;
+			remoteInfo = ExtendOperation;
+		};
+		EE5DA5882845E84E0022F899 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = EE5DA5842845E84E0022F899 /* CommonLibrary.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = EE625A9624B3041000C66201;
+			remoteInfo = CommonLibrary;
+		};
+		EE5DA58A2845E85F0022F899 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = EE5DA5842845E84E0022F899 /* CommonLibrary.xcodeproj */;
+			proxyType = 1;
+			remoteGlobalIDString = EE625A9524B3041000C66201;
+			remoteInfo = CommonLibrary;
+		};
+		EE5DA58C2845E8630022F899 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = EE5DA57E2845E8470022F899 /* ExtendOperation.xcodeproj */;
+			proxyType = 1;
+			remoteGlobalIDString = EE68CD582293DD190017C4E5;
+			remoteInfo = ExtendOperation;
+		};
 /* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		EE5DA57A2845E8280022F899 /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				EE5DA57D2845E82E0022F899 /* ExtendOperation.framework in Embed Frameworks */,
+				EE5DA5792845E8270022F899 /* CommonLibrary.framework in Embed Frameworks */,
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		7902C0851D61B56D00564440 /* RemoteSession.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = RemoteSession.swift; sourceTree = "<group>"; };
@@ -219,6 +266,10 @@
 		79D903551FAB647400D61D31 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		79F5745A1DFDB10A00179ABF /* FileObject.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = FileObject.swift; sourceTree = "<group>"; };
 		CE27C498219BFFA0000BE23C /* ServerTrustPolicy.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ServerTrustPolicy.swift; sourceTree = "<group>"; };
+		EE5DA5772845E8270022F899 /* CommonLibrary.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = CommonLibrary.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		EE5DA57B2845E82E0022F899 /* ExtendOperation.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = ExtendOperation.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		EE5DA57E2845E8470022F899 /* ExtendOperation.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = ExtendOperation.xcodeproj; path = ../ExtendOperation/ExtendOperation.xcodeproj; sourceTree = "<group>"; };
+		EE5DA5842845E84E0022F899 /* CommonLibrary.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = CommonLibrary.xcodeproj; path = ../CommonLibrary/CommonLibrary.xcodeproj; sourceTree = "<group>"; };
 		EE9F3B86270558A400E60B3B /* DataExtension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataExtension.swift; sourceTree = "<group>"; };
 		EEDBD7D3263B7CDC00FE35D2 /* StringExtension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StringExtension.swift; sourceTree = "<group>"; };
 		EEED485527AF8D4600335ED6 /* NSLockExtension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NSLockExtension.swift; sourceTree = "<group>"; };
@@ -240,6 +291,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				EE5DA57C2845E82E0022F899 /* ExtendOperation.framework in Frameworks */,
+				EE5DA5782845E8270022F899 /* CommonLibrary.framework in Frameworks */,
 				79BD63B81E2CC38D0035128C /* AVFoundation.framework in Frameworks */,
 				798D394020D01DA100FFB9EF /* CoreGraphics.framework in Frameworks */,
 				79BD63B21E2CC3350035128C /* ImageIO.framework in Frameworks */,
@@ -272,6 +325,8 @@
 		791950F31DE58A5300B4426E /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				EE5DA57B2845E82E0022F899 /* ExtendOperation.framework */,
+				EE5DA5772845E8270022F899 /* CommonLibrary.framework */,
 				798D393F20D01DA000FFB9EF /* CoreGraphics.framework */,
 				79BD63C11E2CC3D30035128C /* AVFoundation.framework */,
 				79BD63BF1E2CC3CD0035128C /* CoreGraphics.framework */,
@@ -322,6 +377,8 @@
 				79D903521FAB647400D61D31 /* Tests */,
 				799396681D48B7F600086753 /* Products */,
 				791950F31DE58A5300B4426E /* Frameworks */,
+				EE5DA5842845E84E0022F899 /* CommonLibrary.xcodeproj */,
+				EE5DA57E2845E8470022F899 /* ExtendOperation.xcodeproj */,
 			);
 			sourceTree = "<group>";
 		};
@@ -412,6 +469,22 @@
 			name = Extra;
 			sourceTree = "<group>";
 		};
+		EE5DA57F2845E8470022F899 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				EE5DA5832845E8470022F899 /* ExtendOperation.framework */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		EE5DA5852845E84E0022F899 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				EE5DA5892845E84E0022F899 /* CommonLibrary.framework */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXHeadersBuildPhase section */
@@ -465,10 +538,13 @@
 				799396711D48B80D00086753 /* Frameworks */,
 				799396721D48B80D00086753 /* Headers */,
 				799396731D48B80D00086753 /* Resources */,
+				EE5DA57A2845E8280022F899 /* Embed Frameworks */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				EE5DA58D2845E8630022F899 /* PBXTargetDependency */,
+				EE5DA58B2845E85F0022F899 /* PBXTargetDependency */,
 			);
 			name = "FilesProvider OSX";
 			productName = "FileProvider OSX";
@@ -549,6 +625,16 @@
 			mainGroup = 7993965B1D48B7BF00086753;
 			productRefGroup = 799396681D48B7F600086753 /* Products */;
 			projectDirPath = "";
+			projectReferences = (
+				{
+					ProductGroup = EE5DA5852845E84E0022F899 /* Products */;
+					ProjectRef = EE5DA5842845E84E0022F899 /* CommonLibrary.xcodeproj */;
+				},
+				{
+					ProductGroup = EE5DA57F2845E8470022F899 /* Products */;
+					ProjectRef = EE5DA57E2845E8470022F899 /* ExtendOperation.xcodeproj */;
+				},
+			);
 			projectRoot = "";
 			targets = (
 				799396661D48B7F600086753 /* FilesProvider iOS */,
@@ -558,6 +644,23 @@
 			);
 		};
 /* End PBXProject section */
+
+/* Begin PBXReferenceProxy section */
+		EE5DA5832845E8470022F899 /* ExtendOperation.framework */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.framework;
+			path = ExtendOperation.framework;
+			remoteRef = EE5DA5822845E8470022F899 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		EE5DA5892845E84E0022F899 /* CommonLibrary.framework */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.framework;
+			path = CommonLibrary.framework;
+			remoteRef = EE5DA5882845E84E0022F899 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+/* End PBXReferenceProxy section */
 
 /* Begin PBXResourcesBuildPhase section */
 		799396651D48B7F600086753 /* Resources */ = {
@@ -751,6 +854,16 @@
 			target = 799396741D48B80D00086753 /* FilesProvider OSX */;
 			targetProxy = 79D903571FAB647400D61D31 /* PBXContainerItemProxy */;
 		};
+		EE5DA58B2845E85F0022F899 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = CommonLibrary;
+			targetProxy = EE5DA58A2845E85F0022F899 /* PBXContainerItemProxy */;
+		};
+		EE5DA58D2845E8630022F899 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = ExtendOperation;
+			targetProxy = EE5DA58C2845E8630022F899 /* PBXContainerItemProxy */;
+		};
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
@@ -904,7 +1017,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
-				APPLICATION_EXTENSION_API_ONLY = YES;
+				APPLICATION_EXTENSION_API_ONLY = NO;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
 				CLANG_CXX_LIBRARY = "libc++";
@@ -943,7 +1056,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
-				APPLICATION_EXTENSION_API_ONLY = YES;
+				APPLICATION_EXTENSION_API_ONLY = NO;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
 				CLANG_CXX_LIBRARY = "libc++";
