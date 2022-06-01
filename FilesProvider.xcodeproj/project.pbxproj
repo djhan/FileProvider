@@ -135,6 +135,8 @@
 		CE27C49B219BFFA0000BE23C /* ServerTrustPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE27C498219BFFA0000BE23C /* ServerTrustPolicy.swift */; };
 		CE27C49C219C041E000BE23C /* ServerTrustPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE27C498219BFFA0000BE23C /* ServerTrustPolicy.swift */; };
 		CE27C49D219C041E000BE23C /* ServerTrustPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE27C498219BFFA0000BE23C /* ServerTrustPolicy.swift */; };
+		EE0124FC28473A74008869A3 /* CommonLibrary.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = EE5DA5892845E84E0022F899 /* CommonLibrary.framework */; };
+		EE0124FF28473A79008869A3 /* ExtendOperation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = EE5DA5832845E8470022F899 /* ExtendOperation.framework */; };
 		EE9F3B87270558A400E60B3B /* DataExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE9F3B86270558A400E60B3B /* DataExtension.swift */; };
 		EE9F3B88270558A400E60B3B /* DataExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE9F3B86270558A400E60B3B /* DataExtension.swift */; };
 		EE9F3B89270558A400E60B3B /* DataExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE9F3B86270558A400E60B3B /* DataExtension.swift */; };
@@ -272,6 +274,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				EE0124FF28473A79008869A3 /* ExtendOperation.framework in Frameworks */,
+				EE0124FC28473A74008869A3 /* CommonLibrary.framework in Frameworks */,
 				79BD63B81E2CC38D0035128C /* AVFoundation.framework in Frameworks */,
 				798D394020D01DA100FFB9EF /* CoreGraphics.framework in Frameworks */,
 				79BD63B21E2CC3350035128C /* ImageIO.framework in Frameworks */,
@@ -995,7 +999,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
-				APPLICATION_EXTENSION_API_ONLY = YES;
+				APPLICATION_EXTENSION_API_ONLY = NO;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
 				CLANG_CXX_LIBRARY = "libc++";
@@ -1034,7 +1038,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
-				APPLICATION_EXTENSION_API_ONLY = YES;
+				APPLICATION_EXTENSION_API_ONLY = NO;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
 				CLANG_CXX_LIBRARY = "libc++";

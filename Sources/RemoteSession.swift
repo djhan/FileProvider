@@ -179,7 +179,9 @@ final public class SessionDelegate: NSObject, URLSessionDataDelegate, URLSession
             }*/
             completionHandler(data)
         }
-        
+        else {
+            print("RemoteSession>urlSession(): \(dataTask.taskIdentifier) >> 존재하지 않는 태스크")
+        }
     }
     
     public func urlSession(_ session: URLSession, task: URLSessionTask, didSendBodyData bytesSent: Int64, totalBytesSent: Int64, totalBytesExpectedToSend: Int64) {

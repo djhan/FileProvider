@@ -9,6 +9,32 @@
 import Foundation
 import Cocoa
 
+import CommonLibrary
+import ExtendOperation
+import os.log
+
+// MARK: - Enumerations -
+/// HTTP Enumerations
+enum HTTP {
+    /// 에러
+    enum Error: LocalizedError {
+        /// 연결 실패 에러
+        case connection
+        /// 인증 실패 에러
+        case authentication
+        /// 디렉토리를 읽을 수 없음
+        case readDirectory
+        /// 수신 실패 에러
+        case receive
+        /// 송신 실패 에러
+        case send
+        /// 사용자 중지
+        case aborted
+        /// 알 수 없는 에러
+        case unknown
+    }
+}
+
 /**
  The abstract base class for all REST/Web based providers such as WebDAV, Dropbox, OneDrive, Google Drive, etc. and encapsulates basic
  functionalitis such as downloading/uploading.
@@ -19,7 +45,16 @@ open class HTTPFileProvider: NSObject,
                              FileProviderBasicRemote,
                              FileProviderOperations,
                              FileProviderReadWrite,
-                             FileProviderReadWriteProgressive {
+                             FileProviderReadWriteProgressive,
+                             SerialWorksConvertible {
+    
+    // MARK: - Properties
+
+    /// 작업 큐
+    /// - 동시작업 큐 개수는 1개로 제한
+    public var workQueue: OperationQueue? = OperationQueue.newQueue(withWorkCount: 1)
+    /// 큐 등록 가능 여부
+    public var allowRegisterSerialWork = true
 
     open class var type: String { fatalError("HTTPFileProvider is an abstract class. Please implement \(#function) in subclass.") }
     public let baseURL: URL?
@@ -79,7 +114,7 @@ open class HTTPFileProvider: NSObject,
     }
     
     /// 싱크 처리용 큐
-    private let syncQueue = DispatchQueue(label: "djhan.HTTPFileProvider.SyncQueue", attributes: .concurrent)
+    //private let syncQueue = DispatchQueue(label: "djhan.HTTPFileProvider.SyncQueue", attributes: .concurrent)
 
     #if os(macOS) || os(iOS) || os(tvOS)
     open var undoManager: UndoManager? = nil
@@ -598,9 +633,29 @@ open class HTTPFileProvider: NSObject,
         progress.setUserInfoObject(operation, forKey: .fileProvderOperationTypeKey)
         progress.kind = .file
         progress.setUserInfoObject(Progress.FileOperationKind.downloading, forKey: .fileOperationKindKey)
+
+        /**
+         # 주의사항:
+         - 충돌 방지를 위해 작업을 직렬화, 한 번에 하나씩만 받도록 한다
+         - 단, 미리 task를 생성해서 등록하면 RemoteSessiono 에서 잘못된 task.identifier 를 수령하게 된다
+         - 따라서 Operation에서 다운로드 실행시 task를 생성해서 실행해야 한다
+         */        
+        guard let operation = HTTPDownloadOperation.init(at: self,
+                                                         request: request,
+                                                         operation: operation,
+                                                         progress: progress,
+                                                         responseHandler: responseHandler,
+                                                         stream: stream,
+                                                         completionHandler: completionHandler),
+              self.addSerialWork(operation) == true else {
+            // 알 수 없는 에러
+            completionHandler(HTTP.Error.unknown)
+            return nil
+        }
         
-        let task = session.dataTask(with: request)
-        
+        /*
+         let task = session.dataTask(with: request)
+
         /// # 주의사항
         /// - EXC_BAD_ACCESS 발생. 동일한 다운로드 작업을 동시에 처리할 때 문제가 있는 것으로 판단됨
         /// - 동기화 처리. 단, 문제가 생기지 않는지 확인 필요
@@ -646,6 +701,7 @@ open class HTTPFileProvider: NSObject,
         }
         progress.setUserInfoObject(Date(), forKey: .startingTimeKey)
         task.resume()
+         */
         return progress
     }
     
@@ -734,3 +790,132 @@ extension HTTPFileProvider: FileProvider { }
 #if os(macOS) || os(iOS) || os(tvOS)
 extension HTTPFileProvider: FileProvideUndoable { }
 #endif
+
+
+// MARK: - HTTP Asynchronous Operation -
+class HTTPDownloadOperation: DefaultAsynchronousOperation {
+    
+    /// provider
+    weak private var provider: HTTPFileProvider?
+    /// 세션
+    weak private var session: URLSession?
+    /// Stream
+    weak private var stream: OutputStream?
+    /// progress
+    weak var progress: Progress?
+
+    /// 요청
+    private var request: URLRequest
+    /// 작업 종류
+    private var operation: FileOperationType
+    
+    /// 반응 핸들러
+    private var responseHandler: ((_ response: URLResponse) -> Void)? = nil
+    /// 완료 핸들러
+    private var completionHandler: (_ error: Error?) -> Void
+    
+    init?(at provider: HTTPFileProvider,
+          request: URLRequest,
+          operation: FileOperationType,
+          progress: Progress,
+          responseHandler: ((_ response: URLResponse) -> Void)? = nil,
+          stream: OutputStream,
+          completionHandler: @escaping (_ error: Error?) -> Void) {
+     
+        self.provider = provider
+        guard let session = self.provider?.session else {
+            return nil
+        }
+        self.session = session
+        self.stream = stream
+        self.request = request
+        self.operation = operation
+        self.progress = progress
+        self.responseHandler = responseHandler
+        self.completionHandler = completionHandler
+        
+        super.init()
+        
+        os_log("HTTPDownloadOperation>%@ :: (%@) >> 초기화", log: .sandbox, type: .debug, #function, pointerMemoryAddress(of: self))
+
+        self.executeHandler = download
+    }
+    
+    /// 작업 종료
+    private func finishWork(_ error: Error?) {
+        os_log("HTTPDownloadOperation>%@ :: (%@) 다운로드 종료. 에러 = %@", log: .sandbox, type: .debug, #function, pointerMemoryAddress(of: self), error?.localizedDescription ?? "없음")
+        self.completionHandler(error)
+        self.finish()
+    }
+    
+    /// 다운로드 작업 실행
+    private func download() {
+        guard let session = self.session,
+              let stream = self.stream,
+            let progress = self.progress else {
+            self.finishWork(HTTP.Error.unknown)
+            return
+        }
+        
+        os_log("HTTPDownloadOperation>%@ :: (%@) 다운로드 개시", log: .sandbox, type: .debug, #function, pointerMemoryAddress(of: self))
+        
+        let task = session.dataTask(with: self.request)
+
+        
+        if let responseHandler = self.responseHandler {
+            responseCompletionHandlersForTasks[session.sessionDescription!]?[task.taskIdentifier] = { response in
+                responseHandler(response)
+            }
+        }
+        
+        stream.open()
+        dataCompletionHandlersForTasks[session.sessionDescription!]?[task.taskIdentifier] = { [weak task, weak self, weak stream, weak provider] data in
+            guard !data.isEmpty else { return }
+            guard let strongSelf = self,
+                  let provider = provider,
+                  let stream = stream else {
+                self?.finishWork(HTTP.Error.unknown)
+                return
+            }
+            
+            os_log("HTTPDownloadOperation>%@ :: (%@) 작업 진행중...", log: .sandbox, type: .debug, #function, pointerMemoryAddress(of: strongSelf))
+            task.flatMap { provider.delegateNotify(strongSelf.operation, progress: Double($0.countOfBytesReceived) / Double($0.countOfBytesExpectedToReceive)) }
+
+            let result = (try? stream.write(data: data)) ?? -1
+            if result < 0 {
+                os_log("HTTPDownloadOperation>%@ :: (%@) 작업 취소 처리", log: .sandbox, type: .debug, #function, pointerMemoryAddress(of: strongSelf))
+                strongSelf.completionHandler(stream.streamError)
+                provider.delegateNotify(strongSelf.operation, error: stream.streamError)
+                task?.cancel()
+                strongSelf.finish()
+            }
+        }
+        
+        completionHandlersForTasks[session.sessionDescription!]?[task.taskIdentifier] = { [weak self] error in
+            guard let strongSelf = self else {
+                self?.finishWork(HTTP.Error.unknown)
+                return
+            }
+
+            if error != nil {
+                strongSelf.progress?.cancel()
+            }
+            strongSelf.stream?.close()
+            os_log("HTTPDownloadOperation>%@ :: (%@) 다운로드 종료. 에러 = %@", log: .sandbox, type: .debug, #function, pointerMemoryAddress(of: strongSelf), error?.localizedDescription ?? "없음")
+            strongSelf.completionHandler(error)
+            strongSelf.provider?.delegateNotify(strongSelf.operation, error: error)
+            // 작업 종료
+            strongSelf.finish()
+        }
+        
+        task.taskDescription = self.operation.json
+        self.provider?.sessionDelegate?.observerProgress(of: task, using: progress, kind: .download)
+        
+        progress.cancellationHandler = { [weak task] in
+            task?.cancel()
+        }
+        progress.setUserInfoObject(Date(), forKey: .startingTimeKey)
+        task.resume()
+        os_log("HTTPDownloadOperation>%@ :: (%@) %li >> 태스크 완료 실행", log: .sandbox, type: .debug, #function, pointerMemoryAddress(of: self), task.taskIdentifier)
+    }
+}
