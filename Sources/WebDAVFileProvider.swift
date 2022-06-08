@@ -255,6 +255,7 @@ open class WebDAVFileProvider: HTTPFileProvider, FileProviderSharing {
      */
     @discardableResult
     open func searchFiles(path: String, recursive: Bool, query: NSPredicate, including: [URLResourceKey], foundItemHandler: ((FileObject) -> Void)?, completionHandler: @escaping (_ files: [FileObject], _ error: Error?) -> Void) -> Progress? {
+                
         let url = self.url(of: path)
         var request = URLRequest(url: url)
         request.httpMethod = "PROPFIND"
@@ -267,18 +268,37 @@ open class WebDAVFileProvider: HTTPFileProvider, FileProviderSharing {
         progress.setUserInfoObject(url, forKey: .fileURLKey)
         
         let queryIsTruePredicate = query.predicateFormat == "TRUEPREDICATE"
-        let task = session.dataTask(with: request) { (data, response, error) in
+        let task = session.dataTask(with: request) { [weak self] (data, response, error) in
+            
+            guard let strongSelf = self else {
+                // self가 nil인 경우
+                completionHandler([], nil)
+                return
+            }
+            
             // FIXME: paginating results
             var responseError: FileProviderHTTPError?
             if let code = (response as? HTTPURLResponse)?.statusCode , code >= 300, let rCode = FileProviderHTTPErrorCode(rawValue: code) {
-                responseError = self.serverError(with: rCode, path: path, data: data)
+                
+                // 재귀적 검색시 에러가 발생한 경우인지 확인
+                if recursive == true {
+                    let childProgress = strongSelf.searchFilesRecursively(path: path, query: query, including: including, foundItemHandler: foundItemHandler, completionHandler: completionHandler)
+                    if childProgress != nil {
+                        progress.addChild(childProgress!, withPendingUnitCount: 1)
+                        progress.totalUnitCount += 1
+                        return
+                    }
+                }
+
+                // 재귀적 검색이 아닌 경우 에러 처리
+                responseError = strongSelf.serverError(with: rCode, path: path, data: data)
             }
             guard let data = data else {
                 completionHandler([], responseError ?? error)
                 return
             }
             
-            let xresponse = DavResponse.parse(xmlResponse: data, baseURL: self.baseURL)
+            let xresponse = DavResponse.parse(xmlResponse: data, baseURL: strongSelf.baseURL)
             var fileObjects = [WebDavFileObject]()
             for attr in xresponse where attr.href.path != url.path {
                 let fileObject = WebDavFileObject(attr)
@@ -297,6 +317,74 @@ open class WebDAVFileProvider: HTTPFileProvider, FileProviderSharing {
         }
         progress.setUserInfoObject(Date(), forKey: .startingTimeKey)
         task.resume()
+        return progress
+    }
+    
+    @discardableResult
+    private func searchFilesRecursively(path: String, query: NSPredicate, including: [URLResourceKey], foundItemHandler: ((FileObject) -> Void)?, completionHandler: @escaping (_ files: [FileObject], _ error: Error?) -> Void) -> Progress? {
+        
+        let progress: Progress = Progress.init(totalUnitCount: 1)
+        var foundObjects = [FileObject]()
+        
+        self.searchFiles(path: path, recursive: false, query: query, foundItemHandler: foundItemHandler) { [weak self] fileObjects, error in
+            guard let strongSelf = self else {
+                let error = FileProviderWebDavError(code: .unknownError, path: path, serverDescription: "Unknow error was occurred", url: URL.init(fileURLWithPath: ""))
+                completionHandler(foundObjects, error)
+                return
+            }
+            
+            // 에러 발생시 중지 처리
+            if let error = error {
+                completionHandler(foundObjects, error)
+                return
+            }
+            
+            guard fileObjects.count > 0 else {
+                completionHandler(foundObjects, nil)
+                return
+            }
+
+            // 발견된 항목을 전부 추가
+            foundObjects.append(contentsOf: fileObjects)
+            
+            let dispatchGroup = DispatchGroup()
+            
+            // 내부 순환
+            for fileObject in fileObjects {
+                guard fileObject.isDirectory == true else { continue }
+                
+                // 하위 progress 준비
+                var childProgress: Progress?
+                // 동기화 진입
+                dispatchGroup.enter()
+                childProgress = strongSelf.searchFilesRecursively(path: fileObject.path, query: query, including: including, foundItemHandler: foundItemHandler) { childFileObjects, error in
+                    // 에러 발생시 중지 처리
+                    if let error = error {
+                        completionHandler(foundObjects, error)
+                        return
+                    }
+                    
+                    // 발견된 항목을 전부 추가
+                    foundObjects.append(contentsOf: fileObjects)
+                    // childProgress 종료 처리
+                    childProgress?.totalUnitCount += 1
+                    // 동기화 종료
+                    dispatchGroup.leave()
+                }
+                
+                // 하위 progress 추가
+                if childProgress != nil {
+                    progress.addChild(childProgress!, withPendingUnitCount: 1)
+                    progress.totalUnitCount += 1
+                }
+            }
+            
+            dispatchGroup.notify(queue: .global()) {
+                progress.completedUnitCount += 1
+                completionHandler(foundObjects, nil)
+            }
+        }
+        
         return progress
     }
     

@@ -500,6 +500,10 @@ public enum FileProviderHTTPErrorCode: Int, CustomStringConvertible {
     /// `Network Authentication Required` server error status with HTTP code 511
     case networkAuthenticationRequired = 511
     
+    /// 알 수 없는 에러 = 0
+    case unknownError = 0
+    
+    fileprivate static let status0: [Int: String] = [0: "Unknown Error"]
     fileprivate static let status1xx: [Int: String] = [100: "Continue", 101: "Switching Protocols", 102: "Processing"]
     fileprivate static let status2xx: [Int: String] = [200: "OK", 201: "Created", 202: "Accepted", 203: "Non-Authoritative Information", 204: "No Content", 205: "Reset Content", 206: "Partial Content", 207: "Multi-Status", 208: "Already Reported", 226: "IM Used"]
     fileprivate static let status3xx: [Int: String] = [300: "Multiple Choices", 301: "Moved Permanently", 302: "Found", 303: "See Other", 304: "Not Modified", 305: "Use Proxy", 306: "Switch Proxy", 307: "Temporary Redirect", 308: "Permanent Redirect"]
@@ -508,6 +512,7 @@ public enum FileProviderHTTPErrorCode: Int, CustomStringConvertible {
     
     public var description: String {
         switch self.rawValue {
+        case 0: return FileProviderHTTPErrorCode.status0[self.rawValue]!
         case 100...102: return FileProviderHTTPErrorCode.status1xx[self.rawValue]!
         case 200...208, 226: return FileProviderHTTPErrorCode.status2xx[self.rawValue]!
         case 300...308: return FileProviderHTTPErrorCode.status3xx[self.rawValue]!
@@ -525,6 +530,7 @@ public enum FileProviderHTTPErrorCode: Int, CustomStringConvertible {
     /// Description of status based on first digit which indicated fail or success.
     public var typeDescription: String {
         switch self.rawValue {
+        case 0: return "Unknown"
         case 100...199: return "Informational"
         case 200...299: return "Success"
         case 300...399: return "Redirection"
