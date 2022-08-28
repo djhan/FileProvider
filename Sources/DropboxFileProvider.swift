@@ -390,7 +390,7 @@ open class DropboxFileProvider: HTTPFileProvider, FileProviderSharing {
 }
 
 extension DropboxFileProvider: ExtendedFileProvider {
-    open func propertiesOfFileSupported(path: String) -> Bool {
+    public func propertiesOfFileSupported(path: String) -> Bool {
         let fileExt = path.pathExtension.lowercased()
         switch fileExt {
         case "jpg", "jpeg", "bmp", "gif", "png", "tif", "tiff":
@@ -405,7 +405,7 @@ extension DropboxFileProvider: ExtendedFileProvider {
     }
     
     @discardableResult
-    open func propertiesOfFile(path: String, completionHandler: @escaping ((_ propertiesDictionary: [String : Any], _ keys: [String], _ error: Error?) -> Void)) -> Progress? {
+    public func propertiesOfFile(path: String, completionHandler: @escaping ((_ propertiesDictionary: [String : Any], _ keys: [String], _ error: Error?) -> Void)) -> Progress? {
         let url = URL(string: "files/get_metadata", relativeTo: apiURL)!
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
@@ -431,7 +431,7 @@ extension DropboxFileProvider: ExtendedFileProvider {
     }
     
     #if os(macOS) || os(iOS) || os(tvOS)
-    open func thumbnailOfFileSupported(path: String) -> Bool {
+    public func thumbnailOfFileSupported(path: String) -> Bool {
         switch path.pathExtension.lowercased() {
         case "jpg", "jpeg", "gif", "bmp", "png", "tif", "tiff":
             return true
@@ -448,7 +448,7 @@ extension DropboxFileProvider: ExtendedFileProvider {
     
     /// Default value for dimension is 64x64, according to Dropbox documentation
     @discardableResult
-    open func thumbnailOfFile(path: String, dimension: CGSize?, completionHandler: @escaping ((_ image: ImageClass?, _ error: Error?) -> Void)) -> Progress? {
+    public func thumbnailOfFile(path: String, dimension: CGSize?, completionHandler: @escaping ((_ image: ImageClass?, _ error: Error?) -> Void)) -> Progress? {
         let url: URL
         let thumbAPI: Bool
         switch path.pathExtension.lowercased() {

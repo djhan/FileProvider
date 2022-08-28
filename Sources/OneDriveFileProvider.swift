@@ -600,12 +600,12 @@ open class OneDriveFileProvider: HTTPFileProvider, FileProviderSharing {
 
 
 extension OneDriveFileProvider: ExtendedFileProvider {
-    open func propertiesOfFileSupported(path: String) -> Bool {
+    public func propertiesOfFileSupported(path: String) -> Bool {
         return true
     }
     
     @discardableResult
-    open func propertiesOfFile(path: String, completionHandler: @escaping ((_ propertiesDictionary: [String : Any], _ keys: [String], _ error: Error?) -> Void)) -> Progress? {
+    public func propertiesOfFile(path: String, completionHandler: @escaping ((_ propertiesDictionary: [String : Any], _ keys: [String], _ error: Error?) -> Void)) -> Progress? {
         var request = URLRequest(url: url(of: path))
         request.httpMethod = "GET"
         request.setValue(authentication: credential, with: .oAuth2)
@@ -627,7 +627,7 @@ extension OneDriveFileProvider: ExtendedFileProvider {
     }
     
     #if os(macOS) || os(iOS) || os(tvOS)
-    open func thumbnailOfFileSupported(path: String) -> Bool {
+    public func thumbnailOfFileSupported(path: String) -> Bool {
         let fileExt = path.pathExtension.lowercased()
         switch fileExt {
         case "jpg", "jpeg", "bmp", "gif", "png", "tif", "tiff":
@@ -644,7 +644,7 @@ extension OneDriveFileProvider: ExtendedFileProvider {
     }
     
     @discardableResult
-    open func thumbnailOfFile(path: String, dimension: CGSize?, completionHandler: @escaping ((_ image: ImageClass?, _ error: Error?) -> Void)) -> Progress? {
+    public func thumbnailOfFile(path: String, dimension: CGSize?, completionHandler: @escaping ((_ image: ImageClass?, _ error: Error?) -> Void)) -> Progress? {
         let thumbQuery: String
         switch dimension.map( {max($0.width, $0.height) } ) ?? 0 {
         case 0...96:   thumbQuery = "small"

@@ -521,7 +521,7 @@ open class WebDAVFileProvider: HTTPFileProvider, FileProviderSharing {
 
 extension WebDAVFileProvider: ExtendedFileProvider {
     #if os(macOS) || os(iOS) || os(tvOS)
-    open func thumbnailOfFileSupported(path: String) -> Bool {
+    public func thumbnailOfFileSupported(path: String) -> Bool {
         guard self.baseURL?.host?.contains("dav.yandex.") ?? false else {
             return false
         }
@@ -530,7 +530,7 @@ extension WebDAVFileProvider: ExtendedFileProvider {
     }
     
     @discardableResult
-    open func thumbnailOfFile(path: String, dimension: CGSize?, completionHandler: @escaping ((ImageClass?, Error?) -> Void)) -> Progress? {
+    public func thumbnailOfFile(path: String, dimension: CGSize?, completionHandler: @escaping ((ImageClass?, Error?) -> Void)) -> Progress? {
         guard self.baseURL?.host?.contains("dav.yandex.") ?? false else {
             dispatch_queue.async {
                 completionHandler(nil, URLError(.resourceUnavailable, url: self.url(of: path)))
@@ -558,12 +558,12 @@ extension WebDAVFileProvider: ExtendedFileProvider {
     }
     #endif
     
-    open func propertiesOfFileSupported(path: String) -> Bool {
+    public func propertiesOfFileSupported(path: String) -> Bool {
         return false
     }
     
     @discardableResult
-    open func propertiesOfFile(path: String, completionHandler: @escaping (([String : Any], [String], Error?) -> Void)) -> Progress? {
+    public func propertiesOfFile(path: String, completionHandler: @escaping (([String : Any], [String], Error?) -> Void)) -> Progress? {
         dispatch_queue.async {
             completionHandler([:], [], URLError(.resourceUnavailable, url: self.url(of: path)))
         }
