@@ -1011,8 +1011,8 @@ class HTTPDownloadOperation: DefaultAsynchronousOperation {
     private func progressDownload() {
      
         guard let session = self.session,
-              let sessionDescription = session.sessionDescription,
-              let progress = self.progress else {
+              let sessionDescription = session.sessionDescription else {
+              //let progress = self.progress else {
             self.finishWork(HTTP.Error.unknown)
             return
         }
@@ -1048,7 +1048,7 @@ class HTTPDownloadOperation: DefaultAsynchronousOperation {
                 }
 
                 if error != nil {
-                    progress.cancel()
+                    self?.progress?.cancel()
                 }
                 strongSelf.completionHandler(error)
                 os_log("HTTPDownloadOperation>%@ :: (%@) 다운로드 종료. 에러 = %@", log: .sandbox, type: .debug, #function, pointerMemoryAddress(of: strongSelf), error?.localizedDescription ?? "없음")
@@ -1063,11 +1063,13 @@ class HTTPDownloadOperation: DefaultAsynchronousOperation {
                 }
 
                 task.taskDescription = strongSelf.operation.json
-                strongSelf.provider?.sessionDelegate?.observerProgress(of: task, using: progress, kind: .download)
-                progress.cancellationHandler = { [weak task] in
+                if let progress = strongSelf.progress {
+                    strongSelf.provider?.sessionDelegate?.observerProgress(of: task, using: progress, kind: .download)
+                }
+                strongSelf.progress?.cancellationHandler = { [weak task] in
                     task?.cancel()
                 }
-                progress.setUserInfoObject(Date(), forKey: .startingTimeKey)
+                strongSelf.progress?.setUserInfoObject(Date(), forKey: .startingTimeKey)
                 task.resume()
                 os_log("HTTPDownloadOperation>%@ :: (%@) %li >> 태스크 실행", log: .sandbox, type: .debug, #function, pointerMemoryAddress(of: self), task.taskIdentifier)
             }
