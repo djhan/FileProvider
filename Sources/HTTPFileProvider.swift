@@ -347,7 +347,7 @@ open class HTTPFileProvider: NSObject,
         var request = self.request(for: operation)
         request.setValue(rangeWithOffset: offset, length: length)
         var position: Int64 = offset
-        return download_progressive(path: path, request: request, operation: operation, responseHandler: responseHandler, progressHandler: { data in
+        return download_progressive(path: path, request: request, operation: operation, offset: offset, responseHandler: responseHandler, progressHandler: { data in
             progressHandler(position, data)
             position += Int64(data.count)
         }, completionHandler: (completionHandler ?? { _ in return }))
@@ -368,7 +368,7 @@ open class HTTPFileProvider: NSObject,
         request.setValue(rangeWithOffset: offset, length: length)
         
         let stream = OutputStream.toMemory()
-        return self.download(path: path, request: request, operation: operation, stream: stream) { (error) in
+        return self.download(path: path, request: request, operation: operation, offset: offset, stream: stream) { (error) in
             do {
                 if let error = error {
                     throw error
@@ -626,6 +626,7 @@ open class HTTPFileProvider: NSObject,
     }
     
     internal func download(path: String, request: URLRequest, operation: FileOperationType,
+                           offset: Int64 = 0,
                            responseHandler: ((_ response: URLResponse) -> Void)? = nil,
                            stream: OutputStream,
                            completionHandler: @escaping (_ error: Error?) -> Void) -> Progress? {
@@ -644,6 +645,7 @@ open class HTTPFileProvider: NSObject,
                                                          path: path,
                                                          request: request,
                                                          operation: operation,
+                                                         offset: offset,
                                                          progress: progress,
                                                          responseHandler: responseHandler,
                                                          stream: stream,
@@ -707,6 +709,7 @@ open class HTTPFileProvider: NSObject,
     }
     
     internal func download_progressive(path: String, request: URLRequest, operation: FileOperationType,
+                                       offset: Int64 = 0,
                                        responseHandler: ((_ response: URLResponse) -> Void)? = nil,
                                        progressHandler: @escaping (_ data: Data) -> Void,
                                        completionHandler: @escaping (_ error: Error?) -> Void) -> Progress? {
@@ -731,6 +734,7 @@ open class HTTPFileProvider: NSObject,
                                                          path: path,
                                                          request: request,
                                                          operation: operation,
+                                                         offset: offset,
                                                          progress: progress,
                                                          responseHandler: responseHandler,
                                                          progressHandler: progressHandler,
@@ -872,7 +876,9 @@ class HTTPDownloadOperation: DefaultAsynchronousOperation {
     private var path: String
     /// 작업 종류
     private var operation: FileOperationType
-    
+    /// offset
+    private var offset: Int64 = 0
+
     /// 반응 핸들러
     private var responseHandler: ((_ response: URLResponse) -> Void)?
     /// 진행 핸들러
@@ -887,6 +893,7 @@ class HTTPDownloadOperation: DefaultAsynchronousOperation {
         - path: `String`
         - request: `URLRequest`
         - operation: `FileOperationType` 을 지정
+        - offset: offset 값이 있는 경우 지정, 기본값은 0
         - progress: `Progress` 지정
         - responseHandler: `URLResponse` 반환 핸들러 지정. 옵셔널
         - progressHandler: `Data`를 점진적으로 반환하는 핸들러. 점진적 다운로드시 지정. 옵셔널
@@ -897,6 +904,7 @@ class HTTPDownloadOperation: DefaultAsynchronousOperation {
           path: String,
           request: URLRequest,
           operation: FileOperationType,
+          offset: Int64 = 0,
           progress: Progress,
           responseHandler: ((_ response: URLResponse) -> Void)? = nil,
           progressHandler: ((_ data: Data) -> Void)? = nil,
@@ -912,6 +920,7 @@ class HTTPDownloadOperation: DefaultAsynchronousOperation {
         self.path = path
         self.request = request
         self.operation = operation
+        self.offset = offset
         self.progress = progress
         self.responseHandler = responseHandler
         self.progressHandler = progressHandler
@@ -948,7 +957,7 @@ class HTTPDownloadOperation: DefaultAsynchronousOperation {
             self.finishWork(HTTP.Error.unknown)
             return
         }
-        
+                
         provider.attributesOfItem(path: path) { [weak self] attributes, error in
             
             if let error = error {
@@ -963,7 +972,11 @@ class HTTPDownloadOperation: DefaultAsynchronousOperation {
                 return
             }
             
+            let offset = strongSelf.offset
+            
             progress.totalUnitCount = size
+            // offset 만큼 완료 처리
+            progress.completedUnitCount += offset
             
             os_log("HTTPDownloadOperation>%@ :: (%@) 다운로드 개시", log: .sandbox, type: .debug, #function, pointerMemoryAddress(of: self))
             
@@ -989,7 +1002,7 @@ class HTTPDownloadOperation: DefaultAsynchronousOperation {
                 //os_log("HTTPDownloadOperation>%@ :: (%@) 작업 진행중...", log: .sandbox, type: .debug, #function, pointerMemoryAddress(of: strongSelf))
                 task.flatMap {
                     provider.delegateNotify(strongSelf.operation, progress: Double($0.countOfBytesReceived) / Double($0.countOfBytesExpectedToReceive))
-                    progress.completedUnitCount = $0.countOfBytesReceived
+                    progress.completedUnitCount = $0.countOfBytesReceived + offset
                 }
 
                 let result = (try? stream.write(data: data)) ?? -1
@@ -1066,8 +1079,12 @@ class HTTPDownloadOperation: DefaultAsynchronousOperation {
                 return
             }
             
-            progress.totalUnitCount = size
+            let offset = strongSelf.offset
             
+            progress.totalUnitCount = size
+            // offset 만큼 완료 처리
+            progress.completedUnitCount += offset
+
             os_log("HTTPDownloadOperation>%@ :: (%@) 점진적 다운로드 개시", log: .sandbox, type: .debug, #function, pointerMemoryAddress(of: self))
             
             let task = session.dataTask(with: strongSelf.request)
@@ -1089,7 +1106,7 @@ class HTTPDownloadOperation: DefaultAsynchronousOperation {
                 
                 task.flatMap {
                     provider.delegateNotify(strongSelf.operation, progress: Double($0.countOfBytesReceived) / Double($0.countOfBytesExpectedToReceive))
-                    progress.completedUnitCount = $0.countOfBytesReceived
+                    progress.completedUnitCount = $0.countOfBytesReceived + offset
                 }
                 strongSelf.progressHandler?(data)
                 
