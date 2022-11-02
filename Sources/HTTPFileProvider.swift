@@ -886,6 +886,9 @@ class HTTPDownloadOperation: DefaultAsynchronousOperation {
     /// 완료 핸들러
     private var completionHandler: (_ error: Error?) -> Void
     
+    /// Data Task
+    private var task: URLSessionDataTask?
+    
     /**
      다운로드 등록
      - Parameters:
@@ -952,8 +955,10 @@ class HTTPDownloadOperation: DefaultAsynchronousOperation {
         guard let provider = self.provider,
               let session = self.session,
               let sessionDescription = session.sessionDescription,
-              let stream = self.stream,
-            let progress = self.progress else {
+              let stream = self.stream else { //,
+            /// # 변경사항
+            /// - MakeCacheImage에서 progress 값을 가지고 있지 않기 때문에, progress는 확인하지 않도록 한다
+            //let progress = self.progress else {
             self.finishWork(HTTP.Error.unknown)
             return
         }
@@ -974,13 +979,18 @@ class HTTPDownloadOperation: DefaultAsynchronousOperation {
             
             let offset = strongSelf.offset
             
-            progress.totalUnitCount = size
+            strongSelf.progress?.totalUnitCount = size
             // offset 만큼 완료 처리
-            progress.completedUnitCount += offset
+            strongSelf.progress?.completedUnitCount += offset
             
             os_log("HTTPDownloadOperation>%@ :: (%@) 다운로드 개시", log: .sandbox, type: .debug, #function, pointerMemoryAddress(of: self))
             
-            let task = session.dataTask(with: strongSelf.request)
+            strongSelf.task = session.dataTask(with: strongSelf.request)
+            guard let task = strongSelf.task else {
+                os_log("HTTPDownloadOperation>%@ :: (%@) Task 초기화 실패!", log: .sandbox, type: .debug, #function, pointerMemoryAddress(of: self))
+                self?.finishWork(HTTP.Error.unknown)
+                return
+            }
             
             if let responseHandler = strongSelf.responseHandler {
                 responseCompletionHandlersForTasks[sessionDescription]?[task.taskIdentifier] = { response in
@@ -990,9 +1000,10 @@ class HTTPDownloadOperation: DefaultAsynchronousOperation {
             
             stream.open()
             
-            registerDataCompletionHandlersForTasks(session: sessionDescription, task: task.taskIdentifier) { [weak task, weak self, weak stream, weak provider] data in
+            registerDataCompletionHandlersForTasks(session: sessionDescription, task: task.taskIdentifier) { [weak self, weak task, weak stream, weak provider] data in
                 guard !data.isEmpty else { return }
                 guard let strongSelf = self,
+                      let task = task,
                       let provider = provider,
                       let stream = stream else {
                     self?.finishWork(HTTP.Error.unknown)
@@ -1000,17 +1011,19 @@ class HTTPDownloadOperation: DefaultAsynchronousOperation {
                 }
                 
                 //os_log("HTTPDownloadOperation>%@ :: (%@) 작업 진행중...", log: .sandbox, type: .debug, #function, pointerMemoryAddress(of: strongSelf))
-                task.flatMap {
-                    provider.delegateNotify(strongSelf.operation, progress: Double($0.countOfBytesReceived) / Double($0.countOfBytesExpectedToReceive))
-                    progress.completedUnitCount = $0.countOfBytesReceived + offset
-                }
+//                task.flatMap {
+//                    provider.delegateNotify(strongSelf.operation, progress: Double($0.countOfBytesReceived) / Double($0.countOfBytesExpectedToReceive))
+//                    strongSelf.progress?.completedUnitCount = $0.countOfBytesReceived + offset
+//                }
+                provider.delegateNotify(strongSelf.operation, progress: Double(task.countOfBytesReceived) / Double(task.countOfBytesExpectedToReceive))
+                strongSelf.progress?.completedUnitCount = task.countOfBytesReceived + offset
 
                 let result = (try? stream.write(data: data)) ?? -1
                 if result < 0 {
                     os_log("HTTPDownloadOperation>%@ :: (%@) 작업 취소 처리", log: .sandbox, type: .debug, #function, pointerMemoryAddress(of: strongSelf))
                     strongSelf.completionHandler(stream.streamError)
                     provider.delegateNotify(strongSelf.operation, error: stream.streamError)
-                    task?.cancel()
+                    task.cancel()
                     strongSelf.finish()
                 }
                 
@@ -1041,12 +1054,14 @@ class HTTPDownloadOperation: DefaultAsynchronousOperation {
                     }
 
                     task.taskDescription = strongSelf.operation.json
-                    strongSelf.provider?.sessionDelegate?.observerProgress(of: task, using: progress, kind: .download)
-                    
-                    progress.cancellationHandler = { [weak task] in
-                        task?.cancel()
+                    if let progress = strongSelf.progress {
+                        strongSelf.provider?.sessionDelegate?.observerProgress(of: task, using: progress, kind: .download)
+                        progress.cancellationHandler = { [weak task] in
+                            task?.cancel()
+                        }
+                        progress.setUserInfoObject(Date(), forKey: .startingTimeKey)
                     }
-                    progress.setUserInfoObject(Date(), forKey: .startingTimeKey)
+                    
                     task.resume()
                     os_log("HTTPDownloadOperation>%@ :: (%@) %li >> 태스크 실행", log: .sandbox, type: .debug, #function, pointerMemoryAddress(of: self), task.taskIdentifier)
                 }
@@ -1059,8 +1074,10 @@ class HTTPDownloadOperation: DefaultAsynchronousOperation {
         
         guard let provider = self.provider,
             let session = self.session,
-              let sessionDescription = session.sessionDescription,
-              let progress = self.progress else {
+              let sessionDescription = session.sessionDescription else { //,
+            /// # 변경사항
+            /// - MakeCacheImage에서 progress 값을 가지고 있지 않기 때문에, progress는 확인하지 않도록 한다
+              //let progress = self.progress else {
             self.finishWork(HTTP.Error.unknown)
             return
         }
@@ -1081,14 +1098,19 @@ class HTTPDownloadOperation: DefaultAsynchronousOperation {
             
             let offset = strongSelf.offset
             
-            progress.totalUnitCount = size
+            strongSelf.progress?.totalUnitCount = size
             // offset 만큼 완료 처리
-            progress.completedUnitCount += offset
+            strongSelf.progress?.completedUnitCount += offset
 
             os_log("HTTPDownloadOperation>%@ :: (%@) 점진적 다운로드 개시", log: .sandbox, type: .debug, #function, pointerMemoryAddress(of: self))
             
-            let task = session.dataTask(with: strongSelf.request)
-            
+            strongSelf.task = session.dataTask(with: strongSelf.request)
+            guard let task = strongSelf.task else {
+                os_log("HTTPDownloadOperation>%@ :: (%@) Task 초기화 실패!", log: .sandbox, type: .debug, #function, pointerMemoryAddress(of: self))
+                self?.finishWork(HTTP.Error.unknown)
+                return
+            }
+
             if let responseHandler = strongSelf.responseHandler {
                 registerResponseCompletionHandlersForTasks(session: sessionDescription, task: task.taskIdentifier) { response in
                     responseHandler(response)
@@ -1099,15 +1121,18 @@ class HTTPDownloadOperation: DefaultAsynchronousOperation {
             
             registerDataCompletionHandlersForTasks(session: sessionDescription, task: task.taskIdentifier) { [weak task, weak self, weak provider] data in
                 guard let strongSelf = self,
+                      let task = task,
                       let provider = provider else {
                     self?.finishWork(HTTP.Error.unknown)
                     return
                 }
                 
-                task.flatMap {
-                    provider.delegateNotify(strongSelf.operation, progress: Double($0.countOfBytesReceived) / Double($0.countOfBytesExpectedToReceive))
-                    progress.completedUnitCount = $0.countOfBytesReceived + offset
-                }
+//                task.flatMap {
+//                    provider.delegateNotify(strongSelf.operation, progress: Double($0.countOfBytesReceived) / Double($0.countOfBytesExpectedToReceive))
+//                    progress.completedUnitCount = $0.countOfBytesReceived + offset
+//                }
+                provider.delegateNotify(strongSelf.operation, progress: Double(task.countOfBytesReceived) / Double(task.countOfBytesExpectedToReceive))
+                strongSelf.progress?.completedUnitCount = task.countOfBytesReceived + offset
                 strongSelf.progressHandler?(data)
                 
                 // 등록 완료
@@ -1127,8 +1152,9 @@ class HTTPDownloadOperation: DefaultAsynchronousOperation {
                     strongSelf.finishWork(error)
                     
                     // 등록 완료
-                } completion: { [weak self] in
-                    guard let strongSelf = self else {
+                } completion: { [weak self, weak task] in
+                    guard let strongSelf = self,
+                          let task = task else {
                         self?.finishWork(HTTP.Error.unknown)
                         return
                     }
@@ -1136,11 +1162,11 @@ class HTTPDownloadOperation: DefaultAsynchronousOperation {
                     task.taskDescription = strongSelf.operation.json
                     if let progress = strongSelf.progress {
                         strongSelf.provider?.sessionDelegate?.observerProgress(of: task, using: progress, kind: .download)
+                        progress.cancellationHandler = { [weak task] in
+                            task?.cancel()
+                        }
+                        progress.setUserInfoObject(Date(), forKey: .startingTimeKey)
                     }
-                    strongSelf.progress?.cancellationHandler = { [weak task] in
-                        task?.cancel()
-                    }
-                    strongSelf.progress?.setUserInfoObject(Date(), forKey: .startingTimeKey)
                     task.resume()
                     os_log("HTTPDownloadOperation>%@ :: (%@) %li >> 태스크 실행", log: .sandbox, type: .debug, #function, pointerMemoryAddress(of: self), task.taskIdentifier)
                 }
