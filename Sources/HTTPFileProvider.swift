@@ -887,6 +887,7 @@ class HTTPDownloadOperation: DefaultAsynchronousOperation {
     private var completionHandler: (_ error: Error?) -> Void
     
     /// Data Task
+    /// - Note: ventura에서 지역변수로 지정한 task가 nil로 떨어지는 일이 발생. 클래스 변수로 지정해서 저장하도록 한다
     private var task: URLSessionDataTask?
     
     /**
