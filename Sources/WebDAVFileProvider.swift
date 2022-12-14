@@ -264,8 +264,7 @@ open class WebDAVFileProvider: HTTPFileProvider, FileProviderSharing {
         request.setValue(authentication: credential, with: credentialType)
         request.setValue(contentType: .xml, charset: .utf8)
         request.httpBody = WebDavFileObject.xmlProp(including)
-        //let progress = Progress(totalUnitCount: -1)
-        let progress = Progress(totalUnitCount: 1)
+        let progress = Progress(totalUnitCount: -1)
         progress.setUserInfoObject(url, forKey: .fileURLKey)
         
         let queryIsTruePredicate = query.predicateFormat == "TRUEPREDICATE"
@@ -301,7 +300,18 @@ open class WebDAVFileProvider: HTTPFileProvider, FileProviderSharing {
             
             let xresponse = DavResponse.parse(xmlResponse: data, baseURL: strongSelf.baseURL)
             var fileObjects = [WebDavFileObject]()
+            
+            progress.totalUnitCount = xresponse.reduce(Int64(0), { partialResult, response in
+                if response.href.path != url.path { return partialResult + Int64(1) }
+                else { return partialResult }
+            })
+            print("total unit count = \(progress.totalUnitCount)")
             for attr in xresponse where attr.href.path != url.path {
+                // scope 종료시
+                defer {
+                    progress.completedUnitCount += 1
+                }
+                
                 let fileObject = WebDavFileObject(attr)
                 if !queryIsTruePredicate && !query.evaluate(with: fileObject.mapPredicate()) {
                     continue
@@ -311,8 +321,6 @@ open class WebDAVFileProvider: HTTPFileProvider, FileProviderSharing {
                 //progress.completedUnitCount = Int64(fileObjects.count)
                 foundItemHandler?(fileObject)
             }
-            
-            progress.completedUnitCount = 1
             completionHandler(fileObjects, responseError ?? error)
         }
         progress.cancellationHandler = { [weak task] in
