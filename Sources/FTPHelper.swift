@@ -590,7 +590,9 @@ internal extension FTPFileProvider {
                     semaphore?.signal()
                 }
                 if subProgress != nil {
-                    progress?.addChild(subProgress!, withPendingUnitCount: 1)
+                    // 무한 progress 유지를 위해 pendingUnitCount는 0으로 고정
+                    //progress?.addChild(subProgress!, withPendingUnitCount: 1)
+                    progress?.addChild(subProgress!, withPendingUnitCount: 0)
                 }
                 // 세마포어 대기
                 semaphore?.wait()
