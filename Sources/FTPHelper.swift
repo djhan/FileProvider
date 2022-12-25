@@ -669,11 +669,7 @@ internal extension FTPFileProvider {
                             }
 
                             defer {
-                                // https://developer.apple.com/documentation/xcode/diagnosing-performance-issues-early
-                                // 위 문제 해결을 위해 leave 메쏘드를 default qos로 실행
-                                DispatchQueue.global().async {
-                                    group.leave()
-                                }
+                                group.leave()
                             }
                             if let segerror = segerror {
                                 error_lock.lock()

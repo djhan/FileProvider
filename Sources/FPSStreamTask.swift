@@ -485,7 +485,10 @@ public class FileProviderStreamTask: URLSessionTask, StreamDelegate {
         }
         
         let expireDate = Date(timeIntervalSinceNow: timeout)
-        dispatch_queue.async { [weak self] in
+        // https://developer.apple.com/documentation/xcode/diagnosing-performance-issues-early
+        // 위 문제 해결을 위해 userInitiated로 실행
+        //dispatch_queue.async { [weak self] in
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             guard let strongSelf = self else {
                 return completionHandler(nil, false, FileProviderFTPError.unknownError())
             }
