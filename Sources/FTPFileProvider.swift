@@ -1136,7 +1136,7 @@ open class FTPFileProvider: NSObject, FileProviderBasicRemote, FileProviderOpera
             if overwrite {
                 storeHandler()
             } else {
-                strongSelf.attributesOfItem(path: path, completionHandler: { (file, erroe) in
+                strongSelf.attributesOfItem(path: path, completionHandler: { (file, error) in
                     if file == nil {
                         storeHandler()
                     }

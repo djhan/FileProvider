@@ -15,7 +15,11 @@ internal extension FTPFileProvider {
         let timeout = session.configuration.timeoutIntervalForRequest
         let terminalcommand = command + "\r\n"
         //task.write(terminalcommand.data(using: .utf8)!, timeout: timeout) { [weak self] (error) in
-        task.write(terminalcommand.data(using: self.encoding)!, timeout: timeout) { [weak self] (error) in
+        // terminalCommandData 는 encoding이 잘못된 값일 경우 nil로 떨어진다.
+        // 이 경우 utf8로 다시 인코딩을 시도한다
+        var terminalCommandData = terminalcommand.data(using: self.encoding)
+        if terminalCommandData == nil { terminalCommandData = terminalcommand.data(using: .utf8) }
+        task.write(terminalCommandData!, timeout: timeout) { [weak self] (error) in
             guard let strongSelf = self else {
                 return completionHandler(nil, FileProviderFTPError.unknownError())
             }
@@ -665,7 +669,11 @@ internal extension FTPFileProvider {
                             }
 
                             defer {
-                                group.leave()
+                                // https://developer.apple.com/documentation/xcode/diagnosing-performance-issues-early
+                                // 위 문제 해결을 위해 leave 메쏘드를 default qos로 실행
+                                DispatchQueue.global().async {
+                                    group.leave()
+                                }
                             }
                             if let segerror = segerror {
                                 error_lock.lock()
