@@ -1021,9 +1021,9 @@ open class FTPFileProvider: NSObject, FileProviderBasicRemote, FileProviderOpera
                     progress.totalUnitCount = totalSize
                 }
                 progress.completedUnitCount = totalReceived
-                #if DEBUG
+#if DEBUG
                 print("FTPFileProvider>contents(path:offfset:length:completionHandler:): 진행 = \(progress.fractionCompleted)")
-                #endif
+#endif
                 strongSelf.delegateNotify(operation, progress: progress.fractionCompleted)
             }) { [weak self] (error) in
                 guard let strongSelf = self else {
