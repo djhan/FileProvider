@@ -496,9 +496,7 @@ public class FileProviderStreamTask: URLSessionTask, StreamDelegate {
             strongSelf.dataReceivedLock.lock()
             while (strongSelf.dataReceived.count == 0 || strongSelf.dataReceived.count < minBytes) && !timedOut && !strongSelf.endEncountered {
                 strongSelf.dataReceivedLock.unlock()
-                Timer.scheduledTimer(timeInterval: 0.1, target: strongSelf, selector: #selector(strongSelf.timeout), userInfo: nil, repeats: false)
-                CFRunLoopRun()
-                //Thread.sleep(forTimeInterval: 0.1)
+                Thread.sleep(forTimeInterval: 0.1)
                 if let error = inputStream.streamError {
                     completionHandler(nil, inputStream.streamStatus == .atEnd, error)
                     return
@@ -595,9 +593,7 @@ public class FileProviderStreamTask: URLSessionTask, StreamDelegate {
             }
             _ = strongSelf.write(close: false)
             while outputStream.streamStatus == .writing {
-                Timer.scheduledTimer(timeInterval: 0.1, target: strongSelf, selector: #selector(strongSelf.timeout), userInfo: nil, repeats: false)
-                CFRunLoopRun()
-                //Thread.sleep(forTimeInterval: 0.1)
+                Thread.sleep(forTimeInterval: 0.1)
             }
             strongSelf.streamDelegate?.urlSession?(strongSelf._underlyingSession, streamTask: strongSelf, didBecome: inputStream, outputStream: outputStream)
         }
@@ -668,9 +664,7 @@ public class FileProviderStreamTask: URLSessionTask, StreamDelegate {
             }
             if !immediate {
                 while inputStream.streamStatus != .atEnd {
-                    Timer.scheduledTimer(timeInterval: 0.1, target: strongSelf, selector: #selector(strongSelf.timeout), userInfo: nil, repeats: false)
-                    CFRunLoopRun()
-                    //Thread.sleep(forTimeInterval: 0.1)
+                    Thread.sleep(forTimeInterval: 0.1)
                 }
             }
             inputStream.close()
@@ -724,9 +718,7 @@ public class FileProviderStreamTask: URLSessionTask, StreamDelegate {
                         guard inputStream.streamError == nil, outputStream.streamError == nil else {
                             break
                         }
-                        Timer.scheduledTimer(timeInterval: 0.1, target: self, selector: #selector(timeout), userInfo: nil, repeats: false)
-                        CFRunLoopRun()
-                        //Thread.sleep(forTimeInterval: 0.1)
+                        Thread.sleep(forTimeInterval: 0.1)
                     }
                 }
             }
@@ -761,9 +753,7 @@ public class FileProviderStreamTask: URLSessionTask, StreamDelegate {
                             outputStream.streamError == nil || outputStream.streamError?._code == Int(errSSLClosedGraceful) else {
                                 break
                         }
-                        Timer.scheduledTimer(timeInterval: 0.1, target: strongSelf, selector: #selector(strongSelf.timeout), userInfo: nil, repeats: false)
-                        CFRunLoopRun()
-                        //Thread.sleep(forTimeInterval: 0.1)
+                        Thread.sleep(forTimeInterval: 0.1)
                     }
                 }
             }
@@ -802,12 +792,6 @@ public class FileProviderStreamTask: URLSessionTask, StreamDelegate {
         let sslPeerID = task.inputStream?.getSSLPeerID()
         peerID = sslPeerID?.peerID
         peerIDLen = sslPeerID?.peerIDLen ?? 0
-    }
-    
-    /// 타임아웃 처리
-    /// - [참고링크](https://m.blog.naver.com/sabisung/220718702689) 를 참고, 쓰레드가 멈췄을 때도 입력이 가능하도록 변경
-    @objc func timeout() {
-        CFRunLoopStop(CFRunLoopGetCurrent())
     }
 }
 
