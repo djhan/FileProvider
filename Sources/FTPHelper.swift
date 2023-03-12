@@ -32,6 +32,7 @@ internal extension FTPFileProvider {
                 task.resume()
             }
             
+            print("FTPFileProvider>execute(command:): \(command)")
             strongSelf.readData(on: task, minLength: minLength, maxLength: 4096, timeout: timeout, afterSend: afterSend, completionHandler: completionHandler)
         }
     }
@@ -616,10 +617,15 @@ internal extension FTPFileProvider {
                      onProgress: @escaping (_ data: Data, _ totalReceived: Int64, _ expectedBytes: Int64) -> Void,
                      completionHandler: SimpleCompletionHandler) {
         
-        self.attributesOfItem(path: filePath) { (file, error) in
+        self.attributesOfItem(path: filePath) { [weak self] (file, error) in
+            guard let strongSelf = self else {
+                completionHandler?(FileProviderFTPError.unknownError())
+                return
+            }
+
             let totalSize = file?.size ?? -1
             // Retreive data from server
-            self.ftpDataConnect(task) { [weak self] (dataTask, error) in
+            strongSelf.ftpDataConnect(task) { [weak self] (dataTask, error) in
                 guard let strongSelf = self else {
                     completionHandler?(FileProviderFTPError.unknownError())
                     return
@@ -660,17 +666,27 @@ internal extension FTPFileProvider {
                     let error_lock = NSLock()
                     var error: Error?
                     while !eof {
+                        // 작업 취소 발생시
+                        if task.state == .canceling {
+                            print("FTPHelper>ftpRetrieve(): 작업 취소 발생, 에러 처리")
+                            completionHandler?(FileProviderFTPError.cancelledError())
+                            return
+                        }
+                        
                         let group = DispatchGroup()
                         group.enter()
+                        print("FTPHelper>ftpRetrieve(): 동기화 작업 개시. dataTask = \(dataTask)")
                         dataTask.readData(ofMinLength: 1, maxLength: Int.max, timeout: timeout) { [weak self] (data, segeof, segerror) in
+                            defer {
+                                print("FTPHelper>ftpRetrieve(): 동기화 작업 종료")
+                                group.leave()
+                            }
+
                             guard let strongSelf = self else {
                                 completionHandler?(FileProviderFTPError.unknownError())
                                 return
                             }
 
-                            defer {
-                                group.leave()
-                            }
                             if let segerror = segerror {
                                 error_lock.lock()
                                 error = segerror
@@ -695,6 +711,7 @@ internal extension FTPFileProvider {
                             }
                             eof = segeof || (length > 0 && totalReceived >= Int64(length))
                         }
+                        print("FTPHelper>ftpRetrieve(): 동기화 작업 종료 대기...")
                         let waitResult = group.wait(timeout: .now() + timeout)
                         
                         error_lock.try()
@@ -706,6 +723,7 @@ internal extension FTPFileProvider {
                         error_lock.unlock()
                         
                         if waitResult == .timedOut {
+                            print("FTPHelper>ftpRetrieve(): 타임아웃 에러")
                             completionHandler?(URLError(.timedOut, url: strongSelf.url(of: filePath)))
                             return
                         }
@@ -1355,6 +1373,13 @@ internal extension FTPFileProvider {
 
 /// Contains error code and description returned by FTP/S provider.
 public struct FileProviderFTPError: LocalizedError {
+    
+    /// 에러 코드 넘버
+    enum CodeNumber: Int {
+        case cancel = 0
+        case unknown = 999
+    }
+    
     /// HTTP status code returned for error by server.
     public let code: Int
     /// Path of file/folder casued that error
@@ -1362,6 +1387,15 @@ public struct FileProviderFTPError: LocalizedError {
     /// Contents returned by server as error description
     public let serverDescription: String?
     
+    /// 취소 에러 여부
+    public var isCancelledError: Bool {
+        return self.code == Self.CodeNumber.cancel.rawValue
+    }
+    
+    /// 취소 에러 반환
+    static func cancelledError() -> FileProviderFTPError {
+        return FileProviderFTPError.init(code: Self.CodeNumber.cancel.rawValue)
+    }
     /// 미확인 에러 반환
     static func unknownError() -> FileProviderFTPError {
         return FileProviderFTPError.init(message: "Unknown error was occurred")
@@ -1371,9 +1405,14 @@ public struct FileProviderFTPError: LocalizedError {
         return FileProviderFTPError.init(message: "Unknown error was occurred at \"\(path)\"")
     }
 
-    init(code: Int, path: String, serverDescription: String?) {
+    init(code: Int, path: String? = nil, serverDescription: String? = nil) {
         self.code = code
-        self.path = path
+        if let path = path {
+            self.path = path
+        }
+        else {
+            self.path = ""
+        }
         self.serverDescription = serverDescription
     }
     

@@ -360,6 +360,13 @@ public class FileProviderStreamTask: URLSessionTask, StreamDelegate {
         
         self._state = .canceling
         
+        if let inputStream = self.inputStream,
+           inputStream.streamStatus == .atEnd {
+            self.processCancel()
+            return
+        }
+        // 현재 input 처리 진행중이면, state만 변경하고 해당 스트림 처리 진행중에 완료 절차가 처리되도록 한다
+        /*
         dispatch_queue.async { [weak self] in
             guard let strongSelf = self else {
                 return
@@ -369,6 +376,22 @@ public class FileProviderStreamTask: URLSessionTask, StreamDelegate {
             strongSelf._state = .completed
             strongSelf._countOfBytesSent = 0
             strongSelf._countOfBytesRecieved = 0
+        }*/
+    }
+    
+    /// 취소 작업 완료 처리
+    private func processCancel() {
+        dispatch_queue.async { [weak self] in
+            guard let strongSelf = self else {
+                return
+            }
+            strongSelf.finish()
+            
+            strongSelf._state = .completed
+            strongSelf._countOfBytesSent = 0
+            strongSelf._countOfBytesRecieved = 0
+
+            print("FPSStreamTask>cancel(): \(String(describing: self)) >> 작업 취소 처리 완료")
         }
     }
     
@@ -484,6 +507,8 @@ public class FileProviderStreamTask: URLSessionTask, StreamDelegate {
             return
         }
         
+        var wasFinished = false
+
         let expireDate = Date(timeIntervalSinceNow: timeout)
         // https://developer.apple.com/documentation/xcode/diagnosing-performance-issues-early
         // 위 문제 해결을 위해 userInitiated로 실행
@@ -494,16 +519,38 @@ public class FileProviderStreamTask: URLSessionTask, StreamDelegate {
             }
             var timedOut: Bool = false
             strongSelf.dataReceivedLock.lock()
+            print("FPSStreamTask>readData(ofMinLength:): \(String(describing: strongSelf)) >> 작업 개시...")
+            // 순환 처리
             while (strongSelf.dataReceived.count == 0 || strongSelf.dataReceived.count < minBytes) && !timedOut && !strongSelf.endEncountered {
                 strongSelf.dataReceivedLock.unlock()
                 Thread.sleep(forTimeInterval: 0.1)
+                
+                // 취소 처리시
+                if strongSelf._state == .canceling {
+                    guard wasFinished == false else { return }
+                    wasFinished = true
+                    defer {
+                        // 취소 처리 진행
+                        strongSelf.processCancel()
+                    }
+                    print("FPSStreamTask>readData(ofMinLength:): \(String(describing: self)) >> 작업 취소 처리")
+                    completionHandler(nil, inputStream.streamStatus == .atEnd, FileProviderFTPError.cancelledError())
+                    return
+                }
+
                 if let error = inputStream.streamError {
+                    guard wasFinished == false else { return }
+                    wasFinished = true
                     completionHandler(nil, inputStream.streamStatus == .atEnd, error)
                     return
                 }
                 timedOut = expireDate < Date()
                 strongSelf.dataReceivedLock.lock()
             }
+            
+            // 이미 종료 처리된 경우 아래의 처리는 무시
+            guard wasFinished == false else { return }
+
             strongSelf.endEncountered = false
             var dR: Data?
             if strongSelf.dataReceived.count > maxBytes {
@@ -518,7 +565,18 @@ public class FileProviderStreamTask: URLSessionTask, StreamDelegate {
             }
             let isEOF = inputStream.streamStatus == .atEnd && strongSelf.dataReceived.count == 0
             strongSelf.dataReceivedLock.unlock()
-            completionHandler(dR, isEOF, dR == nil ? (timedOut ? URLError(.timedOut) : inputStream.streamError) : nil)
+            
+            var error: Error?
+            if strongSelf._state == .canceling {
+                error = FileProviderFTPError.cancelledError()
+            }
+            else {
+                error = timedOut ? URLError(.timedOut) : inputStream.streamError
+            }
+            
+            completionHandler(dR, isEOF, dR == nil ? (error) : nil)
+
+            print("FPSStreamTask>readData(ofMinLength:): \(String(describing: self)) >> 작업 종료")
         }
     }
     
