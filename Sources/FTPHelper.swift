@@ -31,8 +31,6 @@ internal extension FTPFileProvider {
             if task.state == .suspended {
                 task.resume()
             }
-            
-            print("FTPFileProvider>execute(command:): \(command)")
             strongSelf.readData(on: task, minLength: minLength, maxLength: 4096, timeout: timeout, afterSend: afterSend, completionHandler: completionHandler)
         }
     }
@@ -564,8 +562,9 @@ internal extension FTPFileProvider {
             if progress?.isCancelled == true {
                 return completionHandler([], FileProviderFTPError.init(message: "Aborted by user", path: path))
             }
-            
+#if DEBUG
             print("FTPHelper>recursiveList(path:): \(path) >> 발견된 아이템 갯수 = \(files.count)")
+#endif
             recursiveResults.append(contentsOf: files)
             foundItemsHandler?(files)
             
@@ -583,7 +582,9 @@ internal extension FTPFileProvider {
             // 하위 디렉토리 순환
             for dir in directories {
                 if progress?.isCancelled == true {
+#if DEBUG
                     print("FTPHelper>recursiveList(path:): 사용자 중지 발생, 중지")
+#endif
                     return completionHandler([], FileProviderFTPError.init(message: "Aborted by user", path: dir.path))
                 }
                 // 하위 프로그레스로 등록
@@ -668,17 +669,23 @@ internal extension FTPFileProvider {
                     while !eof {
                         // 작업 취소 발생시
                         if task.state == .canceling {
+#if DEBUG
                             print("FTPHelper>ftpRetrieve(): 작업 취소 발생, 에러 처리")
+#endif
                             completionHandler?(FileProviderFTPError.cancelledError())
                             return
                         }
                         
                         let group = DispatchGroup()
                         group.enter()
+#if DEBUG
                         print("FTPHelper>ftpRetrieve(): 동기화 작업 개시. dataTask = \(dataTask)")
+#endif
                         dataTask.readData(ofMinLength: 1, maxLength: Int.max, timeout: timeout) { [weak self] (data, segeof, segerror) in
                             defer {
+#if DEBUG
                                 print("FTPHelper>ftpRetrieve(): 동기화 작업 종료")
+#endif
                                 group.leave()
                             }
 
@@ -711,7 +718,9 @@ internal extension FTPFileProvider {
                             }
                             eof = segeof || (length > 0 && totalReceived >= Int64(length))
                         }
+#if DEBUG
                         print("FTPHelper>ftpRetrieve(): 동기화 작업 종료 대기...")
+#endif
                         let waitResult = group.wait(timeout: .now() + timeout)
                         
                         error_lock.try()
@@ -723,7 +732,9 @@ internal extension FTPFileProvider {
                         error_lock.unlock()
                         
                         if waitResult == .timedOut {
+#if DEBUG
                             print("FTPHelper>ftpRetrieve(): 타임아웃 에러")
+#endif
                             completionHandler?(URLError(.timedOut, url: strongSelf.url(of: filePath)))
                             return
                         }

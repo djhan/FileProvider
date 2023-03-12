@@ -390,8 +390,9 @@ public class FileProviderStreamTask: URLSessionTask, StreamDelegate {
             strongSelf._state = .completed
             strongSelf._countOfBytesSent = 0
             strongSelf._countOfBytesRecieved = 0
-
+#if DEBUG
             print("FPSStreamTask>cancel(): \(String(describing: self)) >> 작업 취소 처리 완료")
+#endif
         }
     }
     
@@ -519,7 +520,9 @@ public class FileProviderStreamTask: URLSessionTask, StreamDelegate {
             }
             var timedOut: Bool = false
             strongSelf.dataReceivedLock.lock()
+#if DEBUG
             print("FPSStreamTask>readData(ofMinLength:): \(String(describing: strongSelf)) >> 작업 개시...")
+#endif
             // 순환 처리
             while (strongSelf.dataReceived.count == 0 || strongSelf.dataReceived.count < minBytes) && !timedOut && !strongSelf.endEncountered {
                 strongSelf.dataReceivedLock.unlock()
@@ -533,7 +536,9 @@ public class FileProviderStreamTask: URLSessionTask, StreamDelegate {
                         // 취소 처리 진행
                         strongSelf.processCancel()
                     }
+#if DEBUG
                     print("FPSStreamTask>readData(ofMinLength:): \(String(describing: self)) >> 작업 취소 처리")
+#endif
                     completionHandler(nil, inputStream.streamStatus == .atEnd, FileProviderFTPError.cancelledError())
                     return
                 }
@@ -575,8 +580,9 @@ public class FileProviderStreamTask: URLSessionTask, StreamDelegate {
             }
             
             completionHandler(dR, isEOF, dR == nil ? (error) : nil)
-
+#if DEBUG
             print("FPSStreamTask>readData(ofMinLength:): \(String(describing: self)) >> 작업 종료")
+#endif
         }
     }
     
@@ -910,7 +916,9 @@ extension FileProviderStreamTask {
             while (self.inputStream?.hasBytesAvailable ?? false) {
                 var buffer = [UInt8](repeating: 0, count: 2048)
                 guard let inputStream = self.inputStream else {
+#if DEBUG
                     print("FileProviderStreamTask>stream(_:handle:): inputStream이 nil!")
+#endif
                     self.streamDelegate?.urlSession?(_underlyingSession, task: self, didCompleteWithError: FileProviderFTPError.init(message: "File stream is released"))
                     return
                 }
