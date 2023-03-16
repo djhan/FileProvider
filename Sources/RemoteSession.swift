@@ -32,7 +32,15 @@ extension FileProviderHTTPError {
 }
 
 /// 싱크 처리용 큐
-private let syncQueue = DispatchQueue(label: "djhan.RemoteSession.SyncQueue", attributes: .concurrent)
+private let syncQueue = { let syncQueue = DispatchQueue(label: "djhan.RemoteSession.SyncQueue_" + UUID().uuidString,
+                                                         qos: .default,
+                                                         attributes: .concurrent,
+                                                         autoreleaseFrequency: .workItem,
+                                                         target: nil)
+    // 동일 큐 판별을 위해 등록 처리
+    DispatchQueue.registerDetection(of: syncQueue)
+    return syncQueue
+}()
 
 internal var completionHandlersForTasks = [String: [Int: SimpleCompletionHandler]]()
 internal var downloadCompletionHandlersForTasks = [String: [Int: (URL) -> Void]]()
