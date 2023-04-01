@@ -68,12 +68,12 @@ open class FTPFileProvider: NSObject, FileProviderBasicRemote, FileProviderOpera
             self.stateLock.withCriticalScope { [weak self] () -> URLSession in
                 guard let strongSelf = self else {
                     print("FTPFileProvider>session: StrongSelf가 nil, 더미값 반환")
-                    return URLSession(configuration: URLSessionConfiguration.default, delegate: sessionDelegate as URLSessionDelegate?, delegateQueue: nil)
+                    return URLSession(configuration: URLSessionConfiguration.default, delegate: self?.sessionDelegate as URLSessionDelegate?, delegateQueue: nil)
                 }
                 if strongSelf._session == nil {
                     strongSelf.sessionDelegate = SessionDelegate(fileProvider: strongSelf)
                     let config = URLSessionConfiguration.default
-                    strongSelf._session = URLSession(configuration: config, delegate: sessionDelegate as URLSessionDelegate?, delegateQueue: strongSelf.operation_queue)
+                    strongSelf._session = URLSession(configuration: config, delegate: strongSelf.sessionDelegate as URLSessionDelegate?, delegateQueue: strongSelf.operation_queue)
                     strongSelf._session?.sessionDescription = UUID().uuidString
                     /**
                      # Error 발생
