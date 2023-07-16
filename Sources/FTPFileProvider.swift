@@ -7,7 +7,7 @@
 //
 
 import Foundation
-import os.log
+import CommonLibrary
 
 /**
  Allows accessing to FTP files and directories. This provider doesn't cache or save files internally.
@@ -130,9 +130,9 @@ open class FTPFileProvider: NSObject, FileProviderBasicRemote, FileProviderOpera
         // 에러 회피책
         guard baseURL.host != nil,
               var urlComponents = URLComponents(url: baseURL, resolvingAgainstBaseURL: true) else {
-                  os_log("%{public}@ :: %{public}@ >> URLComponents 초기화 실패!", log: .default, type: .error, #function, baseURL.path)
-                  return nil
-              }
+            EdgeLogger.shared.log(loggerMessage: "URLComponents 초기화 실패.", category: .network, type: .error, function: #function)
+            return nil
+        }
         //var urlComponents = URLComponents(url: baseURL, resolvingAgainstBaseURL: true)!
         let defaultPort: Int = baseURL.scheme?.lowercased() == "ftps" ? 990 : 21
         urlComponents.port = urlComponents.port ?? defaultPort

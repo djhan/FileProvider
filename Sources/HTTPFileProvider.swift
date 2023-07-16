@@ -11,7 +11,6 @@ import Cocoa
 
 import CommonLibrary
 import ExtendOperation
-import os.log
 
 // MARK: - Enumerations -
 /// HTTP Enumerations
@@ -929,8 +928,6 @@ class HTTPDownloadOperation: DefaultAsynchronousOperation {
         
         super.init()
         
-        os_log("HTTPDownloadOperation>%@ :: (%@) >> 초기화", log: .sandbox, type: .debug, #function, pointerMemoryAddress(of: self))
-
         if self.progressHandler != nil {
             // progressHandler 지정시
             self.executeHandler = progressDownload
@@ -943,7 +940,9 @@ class HTTPDownloadOperation: DefaultAsynchronousOperation {
     
     /// 작업 종료
     private func finishWork(_ error: Error?) {
-        os_log("HTTPDownloadOperation>%@ :: (%@) 다운로드 종료. 에러 = %@", log: .sandbox, type: .debug, #function, pointerMemoryAddress(of: self), error?.localizedDescription ?? "없음")
+        if let error = error {
+            EdgeLogger.shared.log(loggerMessage: "에러 발생 = \(error.localizedDescription)", category: .network, type: .error, function: #function)
+        }
         self.completionHandler(error)
         self.finish()
     }
@@ -964,13 +963,13 @@ class HTTPDownloadOperation: DefaultAsynchronousOperation {
         provider.attributesOfItem(path: path) { [weak self] attributes, error in
             
             if let error = error {
-                os_log("HTTPDownloadOperation>%@ :: (%@) 에러 발생 = %@", log: .sandbox, type: .debug, #function, pointerMemoryAddress(of: self), error.localizedDescription)
+                EdgeLogger.shared.log(loggerMessage: "에러 발생 = \(error.localizedDescription)", category: .network, type: .error, function: #function)
                 self?.finishWork(error)
                 return
             }
             guard let strongSelf = self,
                 let size = attributes?.size else {
-                os_log("HTTPDownloadOperation>%@ :: (%@) 파일 크기를 구할 수 없음", log: .sandbox, type: .debug, #function, pointerMemoryAddress(of: self))
+                EdgeLogger.shared.log(loggerMessage: "파일 크기를 구할 수 없음, 중지.", category: .network, type: .debug, function: #function)
                 self?.finishWork(HTTP.Error.receive)
                 return
             }
@@ -981,11 +980,11 @@ class HTTPDownloadOperation: DefaultAsynchronousOperation {
             // offset 만큼 완료 처리
             strongSelf.progress?.completedUnitCount += offset
             
-            os_log("HTTPDownloadOperation>%@ :: (%@) 다운로드 개시", log: .sandbox, type: .debug, #function, pointerMemoryAddress(of: self))
+            EdgeLogger.shared.log(loggerMessage: "다운로드 개시.", category: .network, type: .debug, function: #function)
             
             strongSelf.task = session.dataTask(with: strongSelf.request)
             guard let task = strongSelf.task else {
-                os_log("HTTPDownloadOperation>%@ :: (%@) Task 초기화 실패!", log: .sandbox, type: .debug, #function, pointerMemoryAddress(of: self))
+                EdgeLogger.shared.log(loggerMessage: "Task 초기화 실패. 중지.", category: .network, type: .debug, function: #function)
                 self?.finishWork(HTTP.Error.unknown)
                 return
             }
@@ -1008,7 +1007,6 @@ class HTTPDownloadOperation: DefaultAsynchronousOperation {
                     return
                 }
                 
-                //os_log("HTTPDownloadOperation>%@ :: (%@) 작업 진행중...", log: .sandbox, type: .debug, #function, pointerMemoryAddress(of: strongSelf))
 //                task.flatMap {
 //                    provider.delegateNotify(strongSelf.operation, progress: Double($0.countOfBytesReceived) / Double($0.countOfBytesExpectedToReceive))
 //                    strongSelf.progress?.completedUnitCount = $0.countOfBytesReceived + offset
@@ -1018,7 +1016,7 @@ class HTTPDownloadOperation: DefaultAsynchronousOperation {
 
                 let result = (try? stream.write(data: data)) ?? -1
                 if result < 0 {
-                    os_log("HTTPDownloadOperation>%@ :: (%@) 작업 취소 처리", log: .sandbox, type: .debug, #function, pointerMemoryAddress(of: strongSelf))
+                    EdgeLogger.shared.log(loggerMessage: "작업 취소 처리.", category: .network, type: .debug, function: #function)
                     strongSelf.completionHandler(stream.streamError)
                     provider.delegateNotify(strongSelf.operation, error: stream.streamError)
                     task.cancel()
@@ -1033,11 +1031,13 @@ class HTTPDownloadOperation: DefaultAsynchronousOperation {
                         return
                     }
 
-                    if error != nil {
+                    if let error = error {
                         strongSelf.progress?.cancel()
+                        EdgeLogger.shared.log(loggerMessage: "에러 발생 = \(error.localizedDescription).", category: .network, type: .error, function: #function)
                     }
                     strongSelf.stream?.close()
-                    os_log("HTTPDownloadOperation>%@ :: (%@) 다운로드 종료. 에러 = %@", log: .sandbox, type: .debug, #function, pointerMemoryAddress(of: strongSelf), error?.localizedDescription ?? "없음")
+                    
+                    EdgeLogger.shared.log(loggerMessage: "다운로드 종료 처리.", category: .network, type: .debug, function: #function)
                     strongSelf.completionHandler(error)
                     strongSelf.provider?.delegateNotify(strongSelf.operation, error: error)
                     // 작업 종료
@@ -1061,7 +1061,7 @@ class HTTPDownloadOperation: DefaultAsynchronousOperation {
                     }
                     
                     task.resume()
-                    os_log("HTTPDownloadOperation>%@ :: (%@) %li >> 태스크 실행", log: .sandbox, type: .debug, #function, pointerMemoryAddress(of: self), task.taskIdentifier)
+                    EdgeLogger.shared.log(loggerMessage: "\(task.taskIdentifier) 번째 Task 실행.", category: .network, type: .debug, function: #function)
                 }
             }
         }
@@ -1083,13 +1083,13 @@ class HTTPDownloadOperation: DefaultAsynchronousOperation {
         provider.attributesOfItem(path: path) { [weak self] attributes, error in
             
             if let error = error {
-                os_log("HTTPDownloadOperation>%@ :: (%@) 에러 발생 = %@", log: .sandbox, type: .debug, #function, pointerMemoryAddress(of: self), error.localizedDescription)
+                EdgeLogger.shared.log(loggerMessage: "에러 발생 = \(error.localizedDescription).", category: .network, type: .error, function: #function)
                 self?.finishWork(error)
                 return
             }
             guard let strongSelf = self,
                   let size = attributes?.size else {
-                os_log("HTTPDownloadOperation>%@ :: (%@) 파일 크기를 구할 수 없음", log: .sandbox, type: .debug, #function, pointerMemoryAddress(of: self))
+                EdgeLogger.shared.log(loggerMessage: "파일 크기를 구할 수 없음. 중지.", category: .network, type: .debug, function: #function)
                 self?.finishWork(HTTP.Error.receive)
                 return
             }
@@ -1100,11 +1100,11 @@ class HTTPDownloadOperation: DefaultAsynchronousOperation {
             // offset 만큼 완료 처리
             strongSelf.progress?.completedUnitCount += offset
 
-            os_log("HTTPDownloadOperation>%@ :: (%@) 점진적 다운로드 개시", log: .sandbox, type: .debug, #function, pointerMemoryAddress(of: self))
+            EdgeLogger.shared.log(loggerMessage: " 점진적 다운로드 개시.", category: .network, type: .debug, function: #function)
             
             strongSelf.task = session.dataTask(with: strongSelf.request)
             guard let task = strongSelf.task else {
-                os_log("HTTPDownloadOperation>%@ :: (%@) Task 초기화 실패!", log: .sandbox, type: .debug, #function, pointerMemoryAddress(of: self))
+                EdgeLogger.shared.log(loggerMessage: " Task 초기화 실패. 중지.", category: .network, type: .debug, function: #function)
                 self?.finishWork(HTTP.Error.unknown)
                 return
             }
@@ -1141,11 +1141,11 @@ class HTTPDownloadOperation: DefaultAsynchronousOperation {
                         return
                     }
                     
-                    if error != nil {
+                    if let error = error {
                         self?.progress?.cancel()
+                        EdgeLogger.shared.log(loggerMessage: "에러 발생 = \(error.localizedDescription).", category: .network, type: .error, function: #function)
                     }
                     strongSelf.completionHandler(error)
-                    os_log("HTTPDownloadOperation>%@ :: (%@) 다운로드 종료. 에러 = %@", log: .sandbox, type: .debug, #function, pointerMemoryAddress(of: strongSelf), error?.localizedDescription ?? "없음")
                     strongSelf.provider?.delegateNotify(strongSelf.operation, error: error)
                     strongSelf.finishWork(error)
                     
@@ -1166,7 +1166,7 @@ class HTTPDownloadOperation: DefaultAsynchronousOperation {
                         progress.setUserInfoObject(Date(), forKey: .startingTimeKey)
                     }
                     task.resume()
-                    os_log("HTTPDownloadOperation>%@ :: (%@) %li >> 태스크 실행", log: .sandbox, type: .debug, #function, pointerMemoryAddress(of: self), task.taskIdentifier)
+                    EdgeLogger.shared.log(loggerMessage: "\(task.taskIdentifier) 번째 Task 실행.", category: .network, type: .debug, function: #function)
                 }
             }
         }
