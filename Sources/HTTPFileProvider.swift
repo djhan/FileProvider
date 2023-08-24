@@ -48,13 +48,13 @@ open class HTTPFileProvider: NSObject,
                              SerialWorksConvertible {
     
     // MARK: - Properties
-
+    
     /// 작업 큐
     /// - 동시작업 큐 개수는 1개로 제한
     public var workQueue: CountableOperationQueue? = CountableOperationQueue.init(withWorkCount: 1)
     /// 큐 등록 가능 여부
     public var allowRegisterSerialWork = true
-
+    
     open class var type: String { fatalError("HTTPFileProvider is an abstract class. Please implement \(#function) in subclass.") }
     public let baseURL: URL?
     open var dispatch_queue: DispatchQueue
@@ -112,9 +112,9 @@ open class HTTPFileProvider: NSObject,
         return _longpollSession!
     }
     
-    #if os(macOS) || os(iOS) || os(tvOS)
+#if os(macOS) || os(iOS) || os(tvOS)
     open var undoManager: UndoManager? = nil
-    #endif
+#endif
     
     /**
      This is parent initializer for subclasses. Using this method on `HTTPFileProvider` will fail as `type` is not implemented.
@@ -290,7 +290,7 @@ open class HTTPFileProvider: NSObject,
                     throw cantLoadError
                 }
                 
-                #if os(macOS) || os(iOS) || os(tvOS)
+#if os(macOS) || os(iOS) || os(tvOS)
                 var coordError: NSError?
                 NSFileCoordinator().coordinate(writingItemAt: tempURL, options: .forMoving, writingItemAt: destURL, options: .forReplacing, error: &coordError, byAccessor: { (tempURL, destURL) in
                     do {
@@ -306,7 +306,7 @@ open class HTTPFileProvider: NSObject,
                 if let error = coordError {
                     throw error
                 }
-                #else
+#else
                 do {
                     try FileManager.default.moveItem(at: tempURL, to: destURL)
                     completionHandler?(nil)
@@ -315,7 +315,7 @@ open class HTTPFileProvider: NSObject,
                     completionHandler?(error)
                     self?.delegateNotify(operation, error: error)
                 }
-                #endif
+#endif
                 
             } catch {
                 completionHandler?(error)
@@ -329,12 +329,12 @@ open class HTTPFileProvider: NSObject,
      If path specifies a directory, or if some other error occurs, data will be nil.
      
      - Parameters:
-       - path: Path of file.
-       - progressHandler: a closure called every time a new `Data` is available.
-       - position: start position of data fetched.
-       - data: a portion of contents of file in a `Data` object.
-       - completionHandler: a closure with result of file contents or error.
-       - error: `Error` returned by system if occured.
+     - path: Path of file.
+     - progressHandler: a closure called every time a new `Data` is available.
+     - position: start position of data fetched.
+     - data: a portion of contents of file in a `Data` object.
+     - completionHandler: a closure with result of file contents or error.
+     - error: `Error` returned by system if occured.
      - Returns: An `Progress` to get progress or cancel progress.
      */
     @discardableResult
@@ -412,7 +412,7 @@ open class HTTPFileProvider: NSObject,
      such as retrieving file id from file path. Then you must call `super.doOperation()`
      
      In case you have to call super method asyncronously, create a `Progress` object and pass ot to `progress` parameter.
-    */
+     */
     @discardableResult
     internal func doOperation(_ operation: FileOperationType, overwrite: Bool = false, progress: Progress? = nil,
                               completionHandler: SimpleCompletionHandler) -> Progress? {
@@ -439,14 +439,14 @@ open class HTTPFileProvider: NSObject,
                     }
                     
                     if FileProviderHTTPErrorCode(rawValue: response.statusCode) == .multiStatus, let data = data,
-                        let ms_error = self.multiStatusError(operation: operation, data: data) {
+                       let ms_error = self.multiStatusError(operation: operation, data: data) {
                         throw ms_error
                     }
                 }
                 
-                #if os(macOS) || os(iOS) || os(tvOS)
+#if os(macOS) || os(iOS) || os(tvOS)
                 self._registerUndo(operation)
-                #endif
+#endif
                 progress.completedUnitCount = 1
                 completionHandler?(nil)
                 self.delegateNotify(operation)
@@ -469,26 +469,26 @@ open class HTTPFileProvider: NSObject,
     /**
      This method should be used in subclasses to fetch directory content from servers which support paginated results.
      Almost all HTTP based provider, except WebDAV, supports this method.
-    
+     
      - Important: Please use `[weak self]` when implementing handlers to prevent retain cycles. In these cases,
-         return `nil` as the result of handler as the operation will be aborted.
-    
+     return `nil` as the result of handler as the operation will be aborted.
+     
      - Parameters:
-        - path: path of directory which enqueued for listing, for informational use like errpr reporting.
-        - requestHandler: Get token of next page and returns appropriate `URLRequest` to be sent to server.
-            handler can return `nil` to cancel entire operation.
-        - token: Token of the page which `URLRequest` is needed, token will be `nil` for initial page.
-        - pageHandler: Handler which is called after fetching results of a page to parse data. will return parse result as
-            array of `FileObject` or error if data is nil or parsing is failed. Method will not continue to next page if
-            `error` is returned, otherwise `nextToken` will be used for next page. `nil` value for `newToken` will indicate
-            last page of directory contents.
-        - data: Raw data returned from server. Handler should parse them and return files.
-        - progress: `Progress` object that `completedUnits` will be increased when a new `FileObject` is parsed in method.
-        - completionHandler: All file objects returned by `pageHandler` will be passed to this handler, or error if occured.
-            This handler will be called when `pageHandler` returns `nil for `newToken`.
-        - contents: all files parsed via `pageHandler` will be return aggregated.
-        - error: `Error` returned by server. `nil` means success. If exists, it means `contents` are incomplete.
-    */
+     - path: path of directory which enqueued for listing, for informational use like errpr reporting.
+     - requestHandler: Get token of next page and returns appropriate `URLRequest` to be sent to server.
+     handler can return `nil` to cancel entire operation.
+     - token: Token of the page which `URLRequest` is needed, token will be `nil` for initial page.
+     - pageHandler: Handler which is called after fetching results of a page to parse data. will return parse result as
+     array of `FileObject` or error if data is nil or parsing is failed. Method will not continue to next page if
+     `error` is returned, otherwise `nextToken` will be used for next page. `nil` value for `newToken` will indicate
+     last page of directory contents.
+     - data: Raw data returned from server. Handler should parse them and return files.
+     - progress: `Progress` object that `completedUnits` will be increased when a new `FileObject` is parsed in method.
+     - completionHandler: All file objects returned by `pageHandler` will be passed to this handler, or error if occured.
+     This handler will be called when `pageHandler` returns `nil for `newToken`.
+     - contents: all files parsed via `pageHandler` will be return aggregated.
+     - error: `Error` returned by server. `nil` means success. If exists, it means `contents` are incomplete.
+     */
     internal func paginated(_ path: String, requestHandler: @escaping (_ token: String?) -> URLRequest?,
                             pageHandler: @escaping (_ data: Data?, _ progress: Progress) -> (files: [FileObject], error: Error?, newToken: String?),
                             completionHandler: @escaping (_ contents: [FileObject], _ error: Error?) -> Void) -> Progress {
@@ -536,7 +536,7 @@ open class HTTPFileProvider: NSObject,
         task.resume()
     }
     // codebeat:enable[ARITY]
- 
+    
     internal var maxUploadSimpleSupported: Int64 { return Int64.max }
     
     func upload_task(_ targetPath: String, progress: Progress, task: URLSessionTask, operation: FileOperationType,
@@ -568,7 +568,7 @@ open class HTTPFileProvider: NSObject,
     }
     
     func upload(_ targetPath: String, request: URLRequest, stream: InputStream, size: Int64, operation: FileOperationType,
-                     completionHandler: SimpleCompletionHandler) -> Progress? {
+                completionHandler: SimpleCompletionHandler) -> Progress? {
         if size > maxUploadSimpleSupported {
             let error = self.serverError(with: .payloadTooLarge, path: targetPath, data: nil)
             completionHandler?(error)
@@ -605,7 +605,7 @@ open class HTTPFileProvider: NSObject,
         progress.kind = .file
         progress.setUserInfoObject(Progress.FileOperationKind.downloading, forKey: .fileOperationKindKey)
         
-        #if os(macOS) || os(iOS) || os(tvOS)
+#if os(macOS) || os(iOS) || os(tvOS)
         var error: NSError?
         NSFileCoordinator().coordinate(readingItemAt: localFile, options: .forUploading, error: &error, byAccessor: { (url) in
             let task = self.session.uploadTask(with: request, fromFile: localFile)
@@ -614,9 +614,9 @@ open class HTTPFileProvider: NSObject,
         if let error = error {
             completionHandler?(error)
         }
-        #else
+#else
         self.upload_task(targetPath, progress: progress, task: task, operation: operation, completionHandler: completionHandler)
-        #endif
+#endif
         
         return progress
     }
@@ -630,13 +630,13 @@ open class HTTPFileProvider: NSObject,
         progress.setUserInfoObject(operation, forKey: .fileProvderOperationTypeKey)
         progress.kind = .file
         progress.setUserInfoObject(Progress.FileOperationKind.downloading, forKey: .fileOperationKindKey)
-
+        
         /**
          # 주의사항:
          - 충돌 방지를 위해 작업을 직렬화, 한 번에 하나씩만 받도록 한다
          - 단, 미리 task를 생성해서 등록하면 RemoteSessiono 에서 잘못된 task.identifier 를 수령하게 된다
          - 따라서 Operation에서 다운로드 실행시 task를 생성해서 실행해야 한다
-         */        
+         */
         guard let operation = HTTPDownloadOperation.init(at: self,
                                                          path: path,
                                                          request: request,
@@ -654,52 +654,52 @@ open class HTTPFileProvider: NSObject,
         
         /*
          let task = session.dataTask(with: request)
-
-        /// # 주의사항
-        /// - EXC_BAD_ACCESS 발생. 동일한 다운로드 작업을 동시에 처리할 때 문제가 있는 것으로 판단됨
-        /// - 동기화 처리. 단, 문제가 생기지 않는지 확인 필요
-        self.syncQueue.async(flags: .barrier) { [weak self] in
-            guard let strongSelf = self else {
-                return completionHandler(nil)
-            }
          
-            if let responseHandler = responseHandler {
-                responseCompletionHandlersForTasks[strongSelf.session.sessionDescription!]?[task.taskIdentifier] = { response in
-                    responseHandler(response)
-                }
-            }
-            
-            stream.open()
-            dataCompletionHandlersForTasks[strongSelf.session.sessionDescription!]?[task.taskIdentifier] = { [weak task, weak self] data in
-                guard !data.isEmpty else { return }
-                task.flatMap { self?.delegateNotify(operation, progress: Double($0.countOfBytesReceived) / Double($0.countOfBytesExpectedToReceive)) }
-                
-                let result = (try? stream.write(data: data)) ?? -1
-                if result < 0 {
-                    completionHandler(stream.streamError!)
-                    self?.delegateNotify(operation, error: stream.streamError!)
-                    task?.cancel()
-                }
-            }
-            
-            completionHandlersForTasks[strongSelf.session.sessionDescription!]?[task.taskIdentifier] = { error in
-                if error != nil {
-                    progress.cancel()
-                }
-                stream.close()
-                completionHandler(error)
-                strongSelf.delegateNotify(operation, error: error)
-            }
-            
-            task.taskDescription = operation.json
-            strongSelf.sessionDelegate?.observerProgress(of: task, using: progress, kind: .download)
-        }
-        
-        progress.cancellationHandler = { [weak task] in
-            task?.cancel()
-        }
-        progress.setUserInfoObject(Date(), forKey: .startingTimeKey)
-        task.resume()
+         /// # 주의사항
+         /// - EXC_BAD_ACCESS 발생. 동일한 다운로드 작업을 동시에 처리할 때 문제가 있는 것으로 판단됨
+         /// - 동기화 처리. 단, 문제가 생기지 않는지 확인 필요
+         self.syncQueue.async(flags: .barrier) { [weak self] in
+         guard let strongSelf = self else {
+         return completionHandler(nil)
+         }
+         
+         if let responseHandler = responseHandler {
+         responseCompletionHandlersForTasks[strongSelf.session.sessionDescription!]?[task.taskIdentifier] = { response in
+         responseHandler(response)
+         }
+         }
+         
+         stream.open()
+         dataCompletionHandlersForTasks[strongSelf.session.sessionDescription!]?[task.taskIdentifier] = { [weak task, weak self] data in
+         guard !data.isEmpty else { return }
+         task.flatMap { self?.delegateNotify(operation, progress: Double($0.countOfBytesReceived) / Double($0.countOfBytesExpectedToReceive)) }
+         
+         let result = (try? stream.write(data: data)) ?? -1
+         if result < 0 {
+         completionHandler(stream.streamError!)
+         self?.delegateNotify(operation, error: stream.streamError!)
+         task?.cancel()
+         }
+         }
+         
+         completionHandlersForTasks[strongSelf.session.sessionDescription!]?[task.taskIdentifier] = { error in
+         if error != nil {
+         progress.cancel()
+         }
+         stream.close()
+         completionHandler(error)
+         strongSelf.delegateNotify(operation, error: error)
+         }
+         
+         task.taskDescription = operation.json
+         strongSelf.sessionDelegate?.observerProgress(of: task, using: progress, kind: .download)
+         }
+         
+         progress.cancellationHandler = { [weak task] in
+         task?.cancel()
+         }
+         progress.setUserInfoObject(Date(), forKey: .startingTimeKey)
+         task.resume()
          */
         return progress
     }
@@ -710,10 +710,10 @@ open class HTTPFileProvider: NSObject,
                                        progressHandler: @escaping (_ data: Data) -> Void,
                                        completionHandler: @escaping (_ error: Error?) -> Void) -> Progress? {
         /*
-        guard let sessionDescription = session.sessionDescription else {
-            completionHandler(HTTP.Error.unknown)
-            return nil
-        }*/
+         guard let sessionDescription = session.sessionDescription else {
+         completionHandler(HTTP.Error.unknown)
+         return nil
+         }*/
         
         let progress = Progress(totalUnitCount: -1)
         progress.setUserInfoObject(operation, forKey: .fileProvderOperationTypeKey)
@@ -740,74 +740,74 @@ open class HTTPFileProvider: NSObject,
             completionHandler(HTTP.Error.unknown)
             return nil
         }
-
+        
         /*
-        let task = session.dataTask(with: request)
-        if let responseHandler = responseHandler {
-            registerResponseCompletionHandlersForTasks(session: sessionDescription, task: task.taskIdentifier) { response in
-                responseHandler(response)
-            } completion: {
-                // 등록 완료
-            }
-
-            /*
-            responseCompletionHandlersForTasks[session.sessionDescription!]?[task.taskIdentifier] = { response in
-                responseHandler(response)
-            }
-             */
-        }
+         let task = session.dataTask(with: request)
+         if let responseHandler = responseHandler {
+         registerResponseCompletionHandlersForTasks(session: sessionDescription, task: task.taskIdentifier) { response in
+         responseHandler(response)
+         } completion: {
+         // 등록 완료
+         }
+         
+         /*
+          responseCompletionHandlersForTasks[session.sessionDescription!]?[task.taskIdentifier] = { response in
+          responseHandler(response)
+          }
+          */
+         }
+         
+         registerDataCompletionHandlersForTasks(session: sessionDescription, task: task.taskIdentifier) { [weak task, weak self] data in
+         task.flatMap { self?.delegateNotify(operation, progress: Double($0.countOfBytesReceived) / Double($0.countOfBytesExpectedToReceive)) }
+         progressHandler(data)
+         // 등록 완료
+         } completion: {
+         registerCompletionHandlersForTasks(session: sessionDescription, task: task.taskIdentifier) { [weak self] error in
+         if error != nil {
+         progress.cancel()
+         }
+         completionHandler(error)
+         self?.delegateNotify(operation, error: error)
+         
+         // 등록 완료
+         } completion: { [weak self] in
+         task.taskDescription = operation.json
+         self?.sessionDelegate?.observerProgress(of: task, using: progress, kind: .download)
+         progress.cancellationHandler = { [weak task] in
+         task?.cancel()
+         }
+         progress.setUserInfoObject(Date(), forKey: .startingTimeKey)
+         task.resume()
+         }
+         }*/
         
-        registerDataCompletionHandlersForTasks(session: sessionDescription, task: task.taskIdentifier) { [weak task, weak self] data in
-            task.flatMap { self?.delegateNotify(operation, progress: Double($0.countOfBytesReceived) / Double($0.countOfBytesExpectedToReceive)) }
-            progressHandler(data)
-            // 등록 완료
-        } completion: {
-            registerCompletionHandlersForTasks(session: sessionDescription, task: task.taskIdentifier) { [weak self] error in
-                if error != nil {
-                    progress.cancel()
-                }
-                completionHandler(error)
-                self?.delegateNotify(operation, error: error)
-
-                // 등록 완료
-            } completion: { [weak self] in
-                task.taskDescription = operation.json
-                self?.sessionDelegate?.observerProgress(of: task, using: progress, kind: .download)
-                progress.cancellationHandler = { [weak task] in
-                    task?.cancel()
-                }
-                progress.setUserInfoObject(Date(), forKey: .startingTimeKey)
-                task.resume()
-            }
-        }*/
-
         /*
-        dataCompletionHandlersForTasks[session.sessionDescription!]?[task.taskIdentifier] = { [weak task, weak self] data in
-            task.flatMap { self?.delegateNotify(operation, progress: Double($0.countOfBytesReceived) / Double($0.countOfBytesExpectedToReceive)) }
-            progressHandler(data)
-        }
-        
-        completionHandlersForTasks[session.sessionDescription!]?[task.taskIdentifier] = { error in
-            if error != nil {
-                progress.cancel()
-            }
-            completionHandler(error)
-            self.delegateNotify(operation, error: error)
-        }
-        
-        task.taskDescription = operation.json
-        sessionDelegate?.observerProgress(of: task, using: progress, kind: .download)
-        progress.cancellationHandler = { [weak task] in
-            task?.cancel()
-        }
-        progress.setUserInfoObject(Date(), forKey: .startingTimeKey)
-        task.resume()
+         dataCompletionHandlersForTasks[session.sessionDescription!]?[task.taskIdentifier] = { [weak task, weak self] data in
+         task.flatMap { self?.delegateNotify(operation, progress: Double($0.countOfBytesReceived) / Double($0.countOfBytesExpectedToReceive)) }
+         progressHandler(data)
+         }
+         
+         completionHandlersForTasks[session.sessionDescription!]?[task.taskIdentifier] = { error in
+         if error != nil {
+         progress.cancel()
+         }
+         completionHandler(error)
+         self.delegateNotify(operation, error: error)
+         }
+         
+         task.taskDescription = operation.json
+         sessionDelegate?.observerProgress(of: task, using: progress, kind: .download)
+         progress.cancellationHandler = { [weak task] in
+         task?.cancel()
+         }
+         progress.setUserInfoObject(Date(), forKey: .startingTimeKey)
+         task.resume()
          */
         return progress
     }
     
     internal func download_file(path: String, request: URLRequest, operation: FileOperationType,
-                                  completionHandler: @escaping ((_ tempURL: URL?, _ error: Error?) -> Void)) -> Progress? {
+                                completionHandler: @escaping ((_ tempURL: URL?, _ error: Error?) -> Void)) -> Progress? {
         let progress = Progress(totalUnitCount: -1)
         progress.setUserInfoObject(operation, forKey: .fileProvderOperationTypeKey)
         progress.kind = .file
@@ -865,7 +865,7 @@ class HTTPDownloadOperation: DefaultAsynchronousOperation {
     weak private var stream: OutputStream?
     /// progress
     weak var progress: Progress?
-
+    
     /// 요청
     private var request: URLRequest
     /// 다운로드받을 파일의 서버측 하위 경로
@@ -874,7 +874,7 @@ class HTTPDownloadOperation: DefaultAsynchronousOperation {
     private var operation: FileOperationType
     /// offset
     private var offset: Int64 = 0
-
+    
     /// 반응 핸들러
     private var responseHandler: ((_ response: URLResponse) -> Void)?
     /// 진행 핸들러
@@ -889,16 +889,16 @@ class HTTPDownloadOperation: DefaultAsynchronousOperation {
     /**
      다운로드 등록
      - Parameters:
-        - provider: `HTTPFileProvider`
-        - path: `String`
-        - request: `URLRequest`
-        - operation: `FileOperationType` 을 지정
-        - offset: offset 값이 있는 경우 지정, 기본값은 0
-        - progress: `Progress` 지정
-        - responseHandler: `URLResponse` 반환 핸들러 지정. 옵셔널
-        - progressHandler: `Data`를 점진적으로 반환하는 핸들러. 점진적 다운로드시 지정. 옵셔널
-        - stream: 다운로드받은 데이터를 저장할 `OutputStream`. 점진적 다운로드시 미지정
-        - completionHandler: 완료 핸들러 지정
+     - provider: `HTTPFileProvider`
+     - path: `String`
+     - request: `URLRequest`
+     - operation: `FileOperationType` 을 지정
+     - offset: offset 값이 있는 경우 지정, 기본값은 0
+     - progress: `Progress` 지정
+     - responseHandler: `URLResponse` 반환 핸들러 지정. 옵셔널
+     - progressHandler: `Data`를 점진적으로 반환하는 핸들러. 점진적 다운로드시 지정. 옵셔널
+     - stream: 다운로드받은 데이터를 저장할 `OutputStream`. 점진적 다운로드시 미지정
+     - completionHandler: 완료 핸들러 지정
      */
     init?(at provider: HTTPFileProvider,
           path: String,
@@ -910,7 +910,7 @@ class HTTPDownloadOperation: DefaultAsynchronousOperation {
           progressHandler: ((_ data: Data) -> Void)? = nil,
           stream: OutputStream? = nil,
           completionHandler: @escaping (_ error: Error?) -> Void) {
-     
+        
         self.provider = provider
         guard let session = self.provider?.session else {
             return nil
@@ -941,7 +941,11 @@ class HTTPDownloadOperation: DefaultAsynchronousOperation {
     /// 작업 종료
     private func finishWork(_ error: Error?) {
         if let error = error {
-            EdgeLogger.shared.log(loggerMessage: "에러 발생 = \(error.localizedDescription)", category: .network, type: .error, function: #function)
+            if #available(macOS 11.0, *) {
+                EdgeLogger.shared.networkLogger.log(level: .error, "에러 발생 = \(error.localizedDescription)")
+            } else {
+                // Fallback on earlier versions
+            }
         }
         self.completionHandler(error)
         self.finish()
@@ -959,17 +963,25 @@ class HTTPDownloadOperation: DefaultAsynchronousOperation {
             self.finishWork(HTTP.Error.unknown)
             return
         }
-                
+        
         provider.attributesOfItem(path: path) { [weak self] attributes, error in
             
             if let error = error {
-                EdgeLogger.shared.log(loggerMessage: "에러 발생 = \(error.localizedDescription)", category: .network, type: .error, function: #function)
+                if #available(macOS 11.0, *) {
+                    EdgeLogger.shared.networkLogger.log(level: .error, "에러 발생 = \(error.localizedDescription)")
+                } else {
+                    // Fallback on earlier versions
+                }
                 self?.finishWork(error)
                 return
             }
             guard let strongSelf = self,
-                let size = attributes?.size else {
-                EdgeLogger.shared.log(loggerMessage: "파일 크기를 구할 수 없음, 중지.", category: .network, type: .debug, function: #function)
+                  let size = attributes?.size else {
+                if #available(macOS 11.0, *) {
+                    EdgeLogger.shared.networkLogger.log(level: .debug, "파일 크기를 구할 수 없음, 중지.")
+                } else {
+                    // Fallback on earlier versions
+                }
                 self?.finishWork(HTTP.Error.receive)
                 return
             }
@@ -980,11 +992,19 @@ class HTTPDownloadOperation: DefaultAsynchronousOperation {
             // offset 만큼 완료 처리
             strongSelf.progress?.completedUnitCount += offset
             
-            EdgeLogger.shared.log(loggerMessage: "다운로드 개시.", category: .network, type: .debug, function: #function)
+            if #available(macOS 11.0, *) {
+                EdgeLogger.shared.networkLogger.log(level: .debug, "다운로드 개시.")
+            } else {
+                // Fallback on earlier versions
+            }
             
             strongSelf.task = session.dataTask(with: strongSelf.request)
             guard let task = strongSelf.task else {
-                EdgeLogger.shared.log(loggerMessage: "Task 초기화 실패. 중지.", category: .network, type: .debug, function: #function)
+                if #available(macOS 11.0, *) {
+                    EdgeLogger.shared.networkLogger.log(level: .debug, "Task 초기화 실패. 중지.")
+                } else {
+                    // Fallback on earlier versions
+                }
                 self?.finishWork(HTTP.Error.unknown)
                 return
             }
@@ -1007,42 +1027,54 @@ class HTTPDownloadOperation: DefaultAsynchronousOperation {
                     return
                 }
                 
-//                task.flatMap {
-//                    provider.delegateNotify(strongSelf.operation, progress: Double($0.countOfBytesReceived) / Double($0.countOfBytesExpectedToReceive))
-//                    strongSelf.progress?.completedUnitCount = $0.countOfBytesReceived + offset
-//                }
+                //                task.flatMap {
+                //                    provider.delegateNotify(strongSelf.operation, progress: Double($0.countOfBytesReceived) / Double($0.countOfBytesExpectedToReceive))
+                //                    strongSelf.progress?.completedUnitCount = $0.countOfBytesReceived + offset
+                //                }
                 provider.delegateNotify(strongSelf.operation, progress: Double(task.countOfBytesReceived) / Double(task.countOfBytesExpectedToReceive))
                 strongSelf.progress?.completedUnitCount = task.countOfBytesReceived + offset
-
+                
                 let result = (try? stream.write(data: data)) ?? -1
                 if result < 0 {
-                    EdgeLogger.shared.log(loggerMessage: "작업 취소 처리.", category: .network, type: .debug, function: #function)
+                    if #available(macOS 11.0, *) {
+                        EdgeLogger.shared.networkLogger.log(level: .debug, "작업 취소 처리.")
+                    } else {
+                        // Fallback on earlier versions
+                    }
                     strongSelf.completionHandler(stream.streamError)
                     provider.delegateNotify(strongSelf.operation, error: stream.streamError)
                     task.cancel()
                     strongSelf.finish()
                 }
                 
-            // 등록 완료
+                // 등록 완료
             } completion: {
                 registerCompletionHandlersForTasks(session: sessionDescription, task: task.taskIdentifier) { [weak self] error in
                     guard let strongSelf = self else {
                         self?.finishWork(HTTP.Error.unknown)
                         return
                     }
-
+                    
                     if let error = error {
                         strongSelf.progress?.cancel()
-                        EdgeLogger.shared.log(loggerMessage: "에러 발생 = \(error.localizedDescription).", category: .network, type: .error, function: #function)
+                        if #available(macOS 11.0, *) {
+                            EdgeLogger.shared.networkLogger.log(level: .error, "에러 발생 = \(error.localizedDescription).")
+                        } else {
+                            // Fallback on earlier versions
+                        }
                     }
                     strongSelf.stream?.close()
                     
-                    EdgeLogger.shared.log(loggerMessage: "다운로드 종료 처리.", category: .network, type: .debug, function: #function)
+                    if #available(macOS 11.0, *) {
+                        EdgeLogger.shared.networkLogger.log(level: .debug, "다운로드 종료 처리.")
+                    } else {
+                        // Fallback on earlier versions
+                    }
                     strongSelf.completionHandler(error)
                     strongSelf.provider?.delegateNotify(strongSelf.operation, error: error)
                     // 작업 종료
                     strongSelf.finish()
-                
+                    
                     // 등록 완료
                 } completion: { [weak self, weak task] in
                     guard let strongSelf = self,
@@ -1050,7 +1082,7 @@ class HTTPDownloadOperation: DefaultAsynchronousOperation {
                         self?.finishWork(HTTP.Error.unknown)
                         return
                     }
-
+                    
                     task.taskDescription = strongSelf.operation.json
                     if let progress = strongSelf.progress {
                         strongSelf.provider?.sessionDelegate?.observerProgress(of: task, using: progress, kind: .download)
@@ -1061,7 +1093,11 @@ class HTTPDownloadOperation: DefaultAsynchronousOperation {
                     }
                     
                     task.resume()
-                    EdgeLogger.shared.log(loggerMessage: "\(task.taskIdentifier) 번째 Task 실행.", category: .network, type: .debug, function: #function)
+                    if #available(macOS 11.0, *) {
+                        EdgeLogger.shared.networkLogger.log(level: .debug, "\(task.taskIdentifier) 번째 Task 실행.")
+                    } else {
+                        // Fallback on earlier versions
+                    }
                 }
             }
         }
@@ -1071,11 +1107,11 @@ class HTTPDownloadOperation: DefaultAsynchronousOperation {
     private func progressDownload() {
         
         guard let provider = self.provider,
-            let session = self.session,
+              let session = self.session,
               let sessionDescription = session.sessionDescription else { //,
             /// # 변경사항
             /// - MakeCacheImage에서 progress 값을 가지고 있지 않기 때문에, progress는 확인하지 않도록 한다
-              //let progress = self.progress else {
+            //let progress = self.progress else {
             self.finishWork(HTTP.Error.unknown)
             return
         }
@@ -1083,13 +1119,21 @@ class HTTPDownloadOperation: DefaultAsynchronousOperation {
         provider.attributesOfItem(path: path) { [weak self] attributes, error in
             
             if let error = error {
-                EdgeLogger.shared.log(loggerMessage: "에러 발생 = \(error.localizedDescription).", category: .network, type: .error, function: #function)
+                if #available(macOS 11.0, *) {
+                    EdgeLogger.shared.networkLogger.log(level: .error, "에러 발생 = \(error.localizedDescription).")
+                } else {
+                    // Fallback on earlier versions
+                }
                 self?.finishWork(error)
                 return
             }
             guard let strongSelf = self,
                   let size = attributes?.size else {
-                EdgeLogger.shared.log(loggerMessage: "파일 크기를 구할 수 없음. 중지.", category: .network, type: .debug, function: #function)
+                if #available(macOS 11.0, *) {
+                    EdgeLogger.shared.networkLogger.log(level: .debug, "파일 크기를 구할 수 없음. 중지.")
+                } else {
+                    // Fallback on earlier versions
+                }
                 self?.finishWork(HTTP.Error.receive)
                 return
             }
@@ -1099,16 +1143,24 @@ class HTTPDownloadOperation: DefaultAsynchronousOperation {
             strongSelf.progress?.totalUnitCount = size
             // offset 만큼 완료 처리
             strongSelf.progress?.completedUnitCount += offset
-
-            EdgeLogger.shared.log(loggerMessage: " 점진적 다운로드 개시.", category: .network, type: .debug, function: #function)
+            
+            if #available(macOS 11.0, *) {
+                EdgeLogger.shared.networkLogger.log(level: .debug, " 점진적 다운로드 개시.")
+            } else {
+                // Fallback on earlier versions
+            }
             
             strongSelf.task = session.dataTask(with: strongSelf.request)
             guard let task = strongSelf.task else {
-                EdgeLogger.shared.log(loggerMessage: " Task 초기화 실패. 중지.", category: .network, type: .debug, function: #function)
+                if #available(macOS 11.0, *) {
+                    EdgeLogger.shared.networkLogger.log(level: .debug, " Task 초기화 실패. 중지.")
+                } else {
+                    // Fallback on earlier versions
+                }
                 self?.finishWork(HTTP.Error.unknown)
                 return
             }
-
+            
             if let responseHandler = strongSelf.responseHandler {
                 registerResponseCompletionHandlersForTasks(session: sessionDescription, task: task.taskIdentifier) { response in
                     responseHandler(response)
@@ -1125,10 +1177,10 @@ class HTTPDownloadOperation: DefaultAsynchronousOperation {
                     return
                 }
                 
-//                task.flatMap {
-//                    provider.delegateNotify(strongSelf.operation, progress: Double($0.countOfBytesReceived) / Double($0.countOfBytesExpectedToReceive))
-//                    progress.completedUnitCount = $0.countOfBytesReceived + offset
-//                }
+                //                task.flatMap {
+                //                    provider.delegateNotify(strongSelf.operation, progress: Double($0.countOfBytesReceived) / Double($0.countOfBytesExpectedToReceive))
+                //                    progress.completedUnitCount = $0.countOfBytesReceived + offset
+                //                }
                 provider.delegateNotify(strongSelf.operation, progress: Double(task.countOfBytesReceived) / Double(task.countOfBytesExpectedToReceive))
                 strongSelf.progress?.completedUnitCount = task.countOfBytesReceived + offset
                 strongSelf.progressHandler?(data)
@@ -1143,7 +1195,11 @@ class HTTPDownloadOperation: DefaultAsynchronousOperation {
                     
                     if let error = error {
                         self?.progress?.cancel()
-                        EdgeLogger.shared.log(loggerMessage: "에러 발생 = \(error.localizedDescription).", category: .network, type: .error, function: #function)
+                        if #available(macOS 11.0, *) {
+                            EdgeLogger.shared.networkLogger.log(level: .error, "에러 발생 = \(error.localizedDescription).")
+                        } else {
+                            // Fallback on earlier versions
+                        }
                     }
                     strongSelf.completionHandler(error)
                     strongSelf.provider?.delegateNotify(strongSelf.operation, error: error)
@@ -1166,7 +1222,11 @@ class HTTPDownloadOperation: DefaultAsynchronousOperation {
                         progress.setUserInfoObject(Date(), forKey: .startingTimeKey)
                     }
                     task.resume()
-                    EdgeLogger.shared.log(loggerMessage: "\(task.taskIdentifier) 번째 Task 실행.", category: .network, type: .debug, function: #function)
+                    if #available(macOS 11.0, *) {
+                        EdgeLogger.shared.networkLogger.log(level: .debug, "\(task.taskIdentifier) 번째 Task 실행.")
+                    } else {
+                        // Fallback on earlier versions
+                    }
                 }
             }
         }
