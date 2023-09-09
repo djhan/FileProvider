@@ -131,7 +131,7 @@ open class FTPFileProvider: NSObject, FileProviderBasicRemote, FileProviderOpera
         guard baseURL.host != nil,
               var urlComponents = URLComponents(url: baseURL, resolvingAgainstBaseURL: true) else {
             if #available(macOS 11.0, *) {
-                EdgeLogger.shared.networkLogger.log(level: .error, "URLComponents 초기화 실패.")
+                EdgeLogger.shared.networkLogger.log(level: .error, "\(#function) :: URLComponents 초기화 실패.")
             }
             return nil
         }

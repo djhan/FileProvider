@@ -942,7 +942,7 @@ class HTTPDownloadOperation: DefaultAsynchronousOperation {
     private func finishWork(_ error: Error?) {
         if let error = error {
             if #available(macOS 11.0, *) {
-                EdgeLogger.shared.networkLogger.log(level: .error, "에러 발생 = \(error.localizedDescription)")
+                EdgeLogger.shared.networkLogger.log(level: .error, "\(#function) :: 에러 발생 = \(error.localizedDescription)")
             } else {
                 // Fallback on earlier versions
             }
@@ -968,7 +968,7 @@ class HTTPDownloadOperation: DefaultAsynchronousOperation {
             
             if let error = error {
                 if #available(macOS 11.0, *) {
-                    EdgeLogger.shared.networkLogger.log(level: .error, "에러 발생 = \(error.localizedDescription)")
+                    EdgeLogger.shared.networkLogger.log(level: .error, "\(#function) :: 에러 발생 = \(error.localizedDescription)")
                 } else {
                     // Fallback on earlier versions
                 }
@@ -978,7 +978,7 @@ class HTTPDownloadOperation: DefaultAsynchronousOperation {
             guard let strongSelf = self,
                   let size = attributes?.size else {
                 if #available(macOS 11.0, *) {
-                    EdgeLogger.shared.networkLogger.log(level: .debug, "파일 크기를 구할 수 없음, 중지.")
+                    EdgeLogger.shared.networkLogger.log(level: .debug, "\(#function) :: 파일 크기를 구할 수 없음, 중지.")
                 } else {
                     // Fallback on earlier versions
                 }
@@ -993,7 +993,7 @@ class HTTPDownloadOperation: DefaultAsynchronousOperation {
             strongSelf.progress?.completedUnitCount += offset
             
             if #available(macOS 11.0, *) {
-                EdgeLogger.shared.networkLogger.log(level: .debug, "다운로드 개시.")
+                EdgeLogger.shared.networkLogger.log(level: .debug, "\(#function) :: 다운로드 개시.")
             } else {
                 // Fallback on earlier versions
             }
@@ -1001,7 +1001,7 @@ class HTTPDownloadOperation: DefaultAsynchronousOperation {
             strongSelf.task = session.dataTask(with: strongSelf.request)
             guard let task = strongSelf.task else {
                 if #available(macOS 11.0, *) {
-                    EdgeLogger.shared.networkLogger.log(level: .debug, "Task 초기화 실패. 중지.")
+                    EdgeLogger.shared.networkLogger.log(level: .debug, "\(#function) :: Task 초기화 실패. 중지.")
                 } else {
                     // Fallback on earlier versions
                 }
@@ -1037,7 +1037,7 @@ class HTTPDownloadOperation: DefaultAsynchronousOperation {
                 let result = (try? stream.write(data: data)) ?? -1
                 if result < 0 {
                     if #available(macOS 11.0, *) {
-                        EdgeLogger.shared.networkLogger.log(level: .debug, "작업 취소 처리.")
+                        EdgeLogger.shared.networkLogger.log(level: .debug, "\(#function) :: 작업 취소 처리.")
                     } else {
                         // Fallback on earlier versions
                     }
@@ -1058,7 +1058,7 @@ class HTTPDownloadOperation: DefaultAsynchronousOperation {
                     if let error = error {
                         strongSelf.progress?.cancel()
                         if #available(macOS 11.0, *) {
-                            EdgeLogger.shared.networkLogger.log(level: .error, "에러 발생 = \(error.localizedDescription).")
+                            EdgeLogger.shared.networkLogger.log(level: .error, "\(#function) :: 에러 발생 = \(error.localizedDescription).")
                         } else {
                             // Fallback on earlier versions
                         }
@@ -1066,7 +1066,7 @@ class HTTPDownloadOperation: DefaultAsynchronousOperation {
                     strongSelf.stream?.close()
                     
                     if #available(macOS 11.0, *) {
-                        EdgeLogger.shared.networkLogger.log(level: .debug, "다운로드 종료 처리.")
+                        EdgeLogger.shared.networkLogger.log(level: .debug, "\(#function) :: 다운로드 종료 처리.")
                     } else {
                         // Fallback on earlier versions
                     }
@@ -1094,7 +1094,7 @@ class HTTPDownloadOperation: DefaultAsynchronousOperation {
                     
                     task.resume()
                     if #available(macOS 11.0, *) {
-                        EdgeLogger.shared.networkLogger.log(level: .debug, "\(task.taskIdentifier) 번째 Task 실행.")
+                        EdgeLogger.shared.networkLogger.log(level: .debug, "\(#function) :: \(task.taskIdentifier) 번째 Task 실행.")
                     } else {
                         // Fallback on earlier versions
                     }
@@ -1120,7 +1120,7 @@ class HTTPDownloadOperation: DefaultAsynchronousOperation {
             
             if let error = error {
                 if #available(macOS 11.0, *) {
-                    EdgeLogger.shared.networkLogger.log(level: .error, "에러 발생 = \(error.localizedDescription).")
+                    EdgeLogger.shared.networkLogger.log(level: .error, "\(#function) :: 에러 발생 = \(error.localizedDescription).")
                 } else {
                     // Fallback on earlier versions
                 }
@@ -1130,7 +1130,7 @@ class HTTPDownloadOperation: DefaultAsynchronousOperation {
             guard let strongSelf = self,
                   let size = attributes?.size else {
                 if #available(macOS 11.0, *) {
-                    EdgeLogger.shared.networkLogger.log(level: .debug, "파일 크기를 구할 수 없음. 중지.")
+                    EdgeLogger.shared.networkLogger.log(level: .debug, "\(#function) :: 파일 크기를 구할 수 없음. 중지.")
                 } else {
                     // Fallback on earlier versions
                 }
@@ -1145,7 +1145,7 @@ class HTTPDownloadOperation: DefaultAsynchronousOperation {
             strongSelf.progress?.completedUnitCount += offset
             
             if #available(macOS 11.0, *) {
-                EdgeLogger.shared.networkLogger.log(level: .debug, " 점진적 다운로드 개시.")
+                EdgeLogger.shared.networkLogger.log(level: .debug, "\(#function) ::  점진적 다운로드 개시.")
             } else {
                 // Fallback on earlier versions
             }
@@ -1153,7 +1153,7 @@ class HTTPDownloadOperation: DefaultAsynchronousOperation {
             strongSelf.task = session.dataTask(with: strongSelf.request)
             guard let task = strongSelf.task else {
                 if #available(macOS 11.0, *) {
-                    EdgeLogger.shared.networkLogger.log(level: .debug, " Task 초기화 실패. 중지.")
+                    EdgeLogger.shared.networkLogger.log(level: .debug, "\(#function) ::  Task 초기화 실패. 중지.")
                 } else {
                     // Fallback on earlier versions
                 }
@@ -1196,7 +1196,7 @@ class HTTPDownloadOperation: DefaultAsynchronousOperation {
                     if let error = error {
                         self?.progress?.cancel()
                         if #available(macOS 11.0, *) {
-                            EdgeLogger.shared.networkLogger.log(level: .error, "에러 발생 = \(error.localizedDescription).")
+                            EdgeLogger.shared.networkLogger.log(level: .error, "\(#function) :: 에러 발생 = \(error.localizedDescription).")
                         } else {
                             // Fallback on earlier versions
                         }
@@ -1223,7 +1223,7 @@ class HTTPDownloadOperation: DefaultAsynchronousOperation {
                     }
                     task.resume()
                     if #available(macOS 11.0, *) {
-                        EdgeLogger.shared.networkLogger.log(level: .debug, "\(task.taskIdentifier) 번째 Task 실행.")
+                        EdgeLogger.shared.networkLogger.log(level: .debug, "\(#function) :: \(task.taskIdentifier) 번째 Task 실행.")
                     } else {
                         // Fallback on earlier versions
                     }
