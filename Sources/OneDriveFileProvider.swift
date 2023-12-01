@@ -208,7 +208,43 @@ open class OneDriveFileProvider: HTTPFileProvider, FileProviderSharing {
             return (files, nil, json["@odata.nextLink"] as? String)
         }, completionHandler: completionHandler)
     }
-    
+    /**
+     Returns an Array of `FileObject`s identifying the the directory entries via asynchronous completion handler.
+     
+     If the directory contains no entries or an error is occured, this method will return the empty array.
+     
+     - Parameters:
+       - path: path to target directory. If empty, root will be iterated.
+       - completionHandler: a closure with result of directory entries or error.
+       - contents: An array of `FileObject` identifying the the directory entries.
+       - error: Error returned by system.
+     - Returns: 진행상태를 `Progress`로 반환
+     */
+    open func contentsOfDirectoryWithProgress(path: String, completionHandler: @escaping (_ contents: [FileObject], _ error: Error?) -> Void) -> Progress {
+        return self.paginated(path, requestHandler: { [weak self] (token) -> URLRequest? in
+            guard let `self` = self else { return nil }
+            let url = token.flatMap(URL.init(string:)) ?? self.url(of: path, modifier: "children")
+            var request = URLRequest(url: url)
+            request.httpMethod = "GET"
+            request.setValue(authentication: self.credential, with: .oAuth2)
+            return request
+        }, pageHandler: { [weak self] (data, _) -> (files: [FileObject], error: Error?, newToken: String?) in
+            guard let `self` = self else { return ([], nil, nil) }
+            
+            guard let json = data?.deserializeJSON(), let entries = json["value"] as? [Any] else {
+                let err = URLError(.badServerResponse, url: self.url(of: path))
+                return ([], err, nil)
+            }
+            
+            var files = [FileObject]()
+            for entry in entries {
+                if let entry = entry as? [String: Any], let file = OneDriveFileObject(baseURL: self.baseURL, route: self.route, json: entry) {
+                    files.append(file)
+                }
+            }
+            return (files, nil, json["@odata.nextLink"] as? String)
+        }, completionHandler: completionHandler)
+    }
     /**
      Returns a `FileObject` containing the attributes of the item (file, directory, symlink, etc.) at the path in question via asynchronous completion handler.
      

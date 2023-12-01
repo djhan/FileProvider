@@ -120,9 +120,9 @@ open class HTTPFileProvider: NSObject,
      This is parent initializer for subclasses. Using this method on `HTTPFileProvider` will fail as `type` is not implemented.
      
      - Parameters:
-     - baseURL: Location of server.
-     - credential: An `URLCredential` object with `user` and `password`.
-     - cache: A URLCache to cache downloaded files and contents.
+        - baseURL: Location of server.
+        - credential: An `URLCredential` object with `user` and `password`.
+        - cache: A URLCache to cache downloaded files and contents.
      */
     public init(baseURL: URL?, credential: URLCredential?, cache: URLCache?) {
         // Make base url absolute and path as directory
@@ -329,12 +329,12 @@ open class HTTPFileProvider: NSObject,
      If path specifies a directory, or if some other error occurs, data will be nil.
      
      - Parameters:
-     - path: Path of file.
-     - progressHandler: a closure called every time a new `Data` is available.
-     - position: start position of data fetched.
-     - data: a portion of contents of file in a `Data` object.
-     - completionHandler: a closure with result of file contents or error.
-     - error: `Error` returned by system if occured.
+        - path: Path of file.
+        - progressHandler: a closure called every time a new `Data` is available.
+        - position: start position of data fetched.
+        - data: a portion of contents of file in a `Data` object.
+        - completionHandler: a closure with result of file contents or error.
+        - error: `Error` returned by system if occured.
      - Returns: An `Progress` to get progress or cancel progress.
      */
     @discardableResult
@@ -474,20 +474,19 @@ open class HTTPFileProvider: NSObject,
      return `nil` as the result of handler as the operation will be aborted.
      
      - Parameters:
-     - path: path of directory which enqueued for listing, for informational use like errpr reporting.
-     - requestHandler: Get token of next page and returns appropriate `URLRequest` to be sent to server.
-     handler can return `nil` to cancel entire operation.
-     - token: Token of the page which `URLRequest` is needed, token will be `nil` for initial page.
-     - pageHandler: Handler which is called after fetching results of a page to parse data. will return parse result as
-     array of `FileObject` or error if data is nil or parsing is failed. Method will not continue to next page if
-     `error` is returned, otherwise `nextToken` will be used for next page. `nil` value for `newToken` will indicate
-     last page of directory contents.
-     - data: Raw data returned from server. Handler should parse them and return files.
-     - progress: `Progress` object that `completedUnits` will be increased when a new `FileObject` is parsed in method.
-     - completionHandler: All file objects returned by `pageHandler` will be passed to this handler, or error if occured.
-     This handler will be called when `pageHandler` returns `nil for `newToken`.
-     - contents: all files parsed via `pageHandler` will be return aggregated.
-     - error: `Error` returned by server. `nil` means success. If exists, it means `contents` are incomplete.
+        - path: path of directory which enqueued for listing, for informational use like errpr reporting.
+        - requestHandler: Get token of next page and returns appropriate `URLRequest` to be sent to server.
+         handler can return `nil` to cancel entire operation.
+        - token: Token of the page which `URLRequest` is needed, token will be `nil` for initial  - pageHandler: Handler which is called after fetching results of a page to parse data. will return parse result as
+         array of `FileObject` or error if data is nil or parsing is failed. Method will not continue to next page if
+         `error` is returned, otherwise `nextToken` will be used for next page. `nil` value for `newToken` will indicate
+         last page of directory
+        - data: Raw data returned from server. Handler should parse them and return files.
+        - progress: `Progress` object that `completedUnits` will be increased when a new `FileObject` is parsed in method.
+        - completionHandler: All file objects returned by `pageHandler` will be passed to this handler, or error if occured.
+         This handler will be called when `pageHandler` returns `nil for `newToken`.
+        - contents: all files parsed via `pageHandler` will be return aggregated.
+        - error: `Error` returned by server. `nil` means success. If exists, it means `contents` are incomplete.
      */
     internal func paginated(_ path: String, requestHandler: @escaping (_ token: String?) -> URLRequest?,
                             pageHandler: @escaping (_ data: Data?, _ progress: Progress) -> (files: [FileObject], error: Error?, newToken: String?),
@@ -1145,7 +1144,7 @@ class HTTPDownloadOperation: DefaultAsynchronousOperation {
             strongSelf.progress?.completedUnitCount += offset
             
             if #available(macOS 11.0, *) {
-                EdgeLogger.shared.networkLogger.log(level: .debug, "\(#function) ::  점진적 다운로드 개시.")
+                EdgeLogger.shared.networkLogger.log(level: .debug, "\(#function) :: 점진적 다운로드 개시.")
             } else {
                 // Fallback on earlier versions
             }
@@ -1153,7 +1152,7 @@ class HTTPDownloadOperation: DefaultAsynchronousOperation {
             strongSelf.task = session.dataTask(with: strongSelf.request)
             guard let task = strongSelf.task else {
                 if #available(macOS 11.0, *) {
-                    EdgeLogger.shared.networkLogger.log(level: .debug, "\(#function) ::  Task 초기화 실패. 중지.")
+                    EdgeLogger.shared.networkLogger.log(level: .debug, "\(#function) :: Task 초기화 실패. 중지.")
                 } else {
                     // Fallback on earlier versions
                 }
