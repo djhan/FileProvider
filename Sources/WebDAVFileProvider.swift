@@ -318,7 +318,7 @@ open class WebDAVFileProvider: HTTPFileProvider, FileProviderSharing {
                 }
                 
                 fileObjects.append(fileObject)
-                //progress.completedUnitCount = Int64(fileObjects.count)
+                progress.completedUnitCount = Int64(fileObjects.count)
                 foundItemHandler?(fileObject)
             }
             completionHandler(fileObjects, responseError ?? error)
