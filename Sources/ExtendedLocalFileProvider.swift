@@ -336,11 +336,18 @@ public struct LocalFileInformationGenerator {
         
         func parseLocationData(_ value: String) -> (latitude: Double, longitude: Double, height: Double?)? {
             let scanner = Scanner.init(string: value)
-            var latitude: Double = 0.0, longitude: Double = 0.0, height: Double = 0
-            
-            if scanner.scanDouble(&latitude), scanner.scanDouble(&longitude) {
-                scanner.scanDouble(&height)
-                return (latitude, longitude, height)
+            //var latitude: Double = 0.0, longitude: Double = 0.0, height: Double = 0
+            let latitude = scanner.scanDouble()
+            let longitude = scanner.scanDouble()
+            if latitude != nil, longitude != nil {
+                let height = scanner.scanDouble()
+                if height != nil {
+                    return (latitude!, longitude!, height!)
+                }
+                return nil
+            //if scanner.scanDouble(&latitude), scanner.scanDouble(&longitude) {
+                //scanner.scanDouble(&height)
+                //return (latitude, longitude, height)
             } else {
                 return nil
             }

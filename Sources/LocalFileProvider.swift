@@ -193,7 +193,8 @@ open class LocalFileProvider: NSObject, FileProvider, FileProviderMonitor, FileP
         let progress = Progress(totalUnitCount: -1)
         progress.setUserInfoObject(self.url(of: path), forKey: .fileURLKey)
         
-        dispatch_queue.async {
+        //dispatch_queue.async {
+        Task.detached {
             progress.setUserInfoObject(Date(), forKey: .startingTimeKey)
             let iterator = self.fileManager.enumerator(at: self.url(of: path), includingPropertiesForKeys: nil, options: recursive ? [] : [.skipsSubdirectoryDescendants, .skipsPackageDescendants]) { (url, e) -> Bool in
                 completionHandler([], e)
@@ -648,6 +649,12 @@ internal extension LocalFileProvider {
     
     func coordinated(intents: [NSFileAccessIntent], moving: Bool = false, operationHandler: @escaping (_ sourceUrl: URL, _ destURL: URL?) -> Void, errorHandler:  ((_ error: Error) -> Void)? = nil) {
         let coordinator = NSFileCoordinator(filePresenter: nil)
+        // coordinate(with:) 메쏘드의 클로져 내부에서 호출되는 메쏘드
+        // - swift6 에러 회피
+        func coordinate(at newSource: URL, willMoveTo newDest: URL) {
+            coordinator.item(at: newSource, willMoveTo: newDest)
+        }
+        
         coordinator.coordinate(with: intents, queue: operation_queue) { (error) in
             if let error = error {
                 errorHandler?(error)
@@ -656,11 +663,13 @@ internal extension LocalFileProvider {
             guard let newSource: URL = intents.first?.url else { return }
             let newDest: URL? = intents.dropFirst().first?.url
             if moving, let newDest = newDest {
-                coordinator.item(at: newSource, willMoveTo: newDest)
+                coordinate(at: newSource, willMoveTo: newDest)
+                //coordinator.item(at: newSource, willMoveTo: newDest)
             }
             operationHandler(newSource, newDest)
             if moving, let newDest = newDest {
-                coordinator.item(at: newSource, didMoveTo: newDest)
+                coordinate(at: newSource, willMoveTo: newDest)
+                //coordinator.item(at: newSource, didMoveTo: newDest)
             }
         }
     }

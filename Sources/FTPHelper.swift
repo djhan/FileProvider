@@ -5,7 +5,6 @@
 //  Created by Amir Abbas Mousavian.
 //  Copyright © 2017 Mousavian. Distributed under MIT license.
 //
-
 import Foundation
 
 internal extension FTPFileProvider {

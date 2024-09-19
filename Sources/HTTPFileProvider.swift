@@ -854,7 +854,8 @@ extension HTTPFileProvider: FileProvideUndoable { }
 
 
 // MARK: - HTTP Asynchronous Operation -
-class HTTPDownloadOperation: DefaultAsynchronousOperation {
+class HTTPDownloadOperation: DefaultAsynchronousOperation,
+                             @unchecked Sendable {
     
     /// provider
     weak private var provider: HTTPFileProvider?

@@ -207,8 +207,33 @@ open class CloudFileProvider: LocalFileProvider, FileProviderSharing {
         
         var updateObserver: NSObjectProtocol?
         if let foundItemHandler = foundItemHandler {
+            // addObserver 메쏘드 내부 클로져 실행
+            func doUpdateObserverClosure() {
+                    mdquery.disableUpdates()
+                    
+                    for index in lastReportedCount..<mdquery.resultCount {
+                        guard let attribs = (mdquery.result(at: index) as? NSMetadataItem)?.values(forAttributes: [NSMetadataItemURLKey, NSMetadataItemFSNameKey, NSMetadataItemPathKey, NSMetadataItemFSSizeKey, NSMetadataItemContentTypeTreeKey, NSMetadataItemFSCreationDateKey, NSMetadataItemFSContentChangeDateKey]) else {
+                            continue
+                        }
+                        
+                        guard let url = (attribs[NSMetadataItemURLKey] as? URL)?.standardized, recursive || url.deletingLastPathComponent().path.trimmingCharacters(in: pathTrimSet) == pathURL.path.trimmingCharacters(in: pathTrimSet) else {
+                            continue
+                        }
+                        
+                        if let file = self.mapFileObject(attributes: attribs), query.evaluate(with: file.mapPredicate()) {
+                            foundItemHandler(file)
+                        }
+                    }
+                    lastReportedCount = mdquery.resultCount
+                    progress.totalUnitCount = Int64(lastReportedCount)
+                    
+                    mdquery.enableUpdates()
+            }
+            
             // FIXME: Remove this section as it won't work as expected on iCloud
             updateObserver = NotificationCenter.default.addObserver(forName: .NSMetadataQueryGatheringProgress, object: mdquery, queue: nil, using: { (notification) in
+                doUpdateObserverClosure()
+                /*
                 mdquery.disableUpdates()
                 
                 for index in lastReportedCount..<mdquery.resultCount {
@@ -228,11 +253,12 @@ open class CloudFileProvider: LocalFileProvider, FileProviderSharing {
                 progress.totalUnitCount = Int64(lastReportedCount)
                 
                 mdquery.enableUpdates()
+                 */
             })
         }
         
-        var finishObserver: NSObjectProtocol?
-        finishObserver = NotificationCenter.default.addObserver(forName: .NSMetadataQueryDidFinishGathering, object: mdquery, queue: nil, using: { (notification) in
+        // finishObserver 메쏘드 내부 클로져 실행
+        func doFinishObserverClosure() {
             defer {
                 mdquery.stop()
                 finishObserver.flatMap(NotificationCenter.default.removeObserver)
@@ -265,6 +291,45 @@ open class CloudFileProvider: LocalFileProvider, FileProviderSharing {
             self.dispatch_queue.async {
                 completionHandler(contents, nil)
             }
+        }
+
+        var finishObserver: NSObjectProtocol?
+        finishObserver = NotificationCenter.default.addObserver(forName: .NSMetadataQueryDidFinishGathering, object: mdquery, queue: nil, using: { (notification) in
+            doFinishObserverClosure()
+            /*
+            defer {
+                mdquery.stop()
+                finishObserver.flatMap(NotificationCenter.default.removeObserver)
+                finishObserver = nil
+                updateObserver.flatMap(NotificationCenter.default.removeObserver)
+                updateObserver = nil
+            }
+            
+            guard let results = mdquery.results as? [NSMetadataItem] else {
+                return
+            }
+            
+            mdquery.disableUpdates()
+            
+            var contents = [FileObject]()
+            for result in results {
+                guard let attribs = result.values(forAttributes: [NSMetadataItemURLKey, NSMetadataItemFSNameKey, NSMetadataItemPathKey, NSMetadataItemFSSizeKey, NSMetadataItemContentTypeTreeKey, NSMetadataItemFSCreationDateKey, NSMetadataItemFSContentChangeDateKey]) else {
+                    continue
+                }
+                
+                guard let url = (attribs[NSMetadataItemURLKey] as? URL)?.standardized, recursive || url.deletingLastPathComponent().path.trimmingCharacters(in: pathTrimSet) == pathURL.path.trimmingCharacters(in: pathTrimSet) else {
+                    continue
+                }
+                
+                if let file = self.mapFileObject(attributes: attribs), query.evaluate(with: file.mapPredicate()) {
+                    contents.append(file)
+                }
+            }
+            progress.completedUnitCount = Int64(contents.count)
+            self.dispatch_queue.async {
+                completionHandler(contents, nil)
+            }
+             */
         })
         
         DispatchQueue.main.async {
@@ -485,14 +550,20 @@ open class CloudFileProvider: LocalFileProvider, FileProviderSharing {
         query.predicate = NSPredicate(format: "(%K BEGINSWITH %@)", NSMetadataItemPathKey, pathURL.path)
         query.valueListAttributes = []
         query.searchScopes = [self.scope.rawValue]
-        
-        let updateObserver = NotificationCenter.default.addObserver(forName: .NSMetadataQueryDidUpdate, object: query, queue: nil, using: { (notification) in
-            
+
+        // updateObserver 내부 클로져 실행
+        func doUpdateObserverClosure() {
             query.disableUpdates()
-            
             eventHandler()
-            
             query.enableUpdates()
+        }
+        let updateObserver = NotificationCenter.default.addObserver(forName: .NSMetadataQueryDidUpdate, object: query, queue: nil, using: { (notification) in
+            doUpdateObserverClosure()
+            /*
+            query.disableUpdates()
+            eventHandler()
+            query.enableUpdates()
+             */
         })
         
         DispatchQueue.main.async {
@@ -637,20 +708,29 @@ extension CloudFileProvider {
                                      NSMetadataUbiquitousItemDownloadingStatusKey,
                                      NSMetadataItemFSSizeKey]
         query.searchScopes = [self.scope.rawValue]
-        
+
+        // 위치 이동
+        func terminateAndRemoveObserver() {
+            guard observer != nil else { return }
+            query.stop()
+            observer.flatMap(NotificationCenter.default.removeObserver)
+            observer = nil
+        }
+
         var observer: NSObjectProtocol?
         observer = NotificationCenter.default.addObserver(forName: .NSMetadataQueryDidUpdate, object: query, queue: .main) { [weak self] (notification) in
             guard let items = notification.userInfo?[NSMetadataQueryUpdateChangedItemsKey] as? NSArray,
                 let item = items.firstObject as? NSMetadataItem else {
                     return
             }
-            
+            /*
             func terminateAndRemoveObserver() {
                 guard observer != nil else { return }
                 query.stop()
                 observer.flatMap(NotificationCenter.default.removeObserver)
                 observer = nil
             }
+             */
             
             func updateProgress(_ percent: NSNumber) {
                 let fraction = percent.doubleValue / 100
@@ -706,7 +786,9 @@ extension CloudFileProvider {
         let group = DispatchGroup()
         group.enter()
         var finishObserver: NSObjectProtocol?
-        finishObserver = NotificationCenter.default.addObserver(forName: .NSMetadataQueryDidFinishGathering, object: query, queue: nil, using: { (notification) in
+        
+        // finishObserver 내부 클로져 실행
+        func doFinishObserverClosure() {
             defer {
                 query.stop()
                 group.leave()
@@ -718,7 +800,23 @@ extension CloudFileProvider {
             }
             
             query.disableUpdates()
+        }
+        
+        finishObserver = NotificationCenter.default.addObserver(forName: .NSMetadataQueryDidFinishGathering, object: query, queue: nil, using: { (notification) in
+            doFinishObserverClosure()
+            /*
+            defer {
+                query.stop()
+                group.leave()
+                NotificationCenter.default.removeObserver(finishObserver!)
+            }
             
+            if query.resultCount > 0 {
+                item = query.result(at: 0) as? NSMetadataItem
+            }
+            
+            query.disableUpdates()
+            */
         })
         
         DispatchQueue.main.async {

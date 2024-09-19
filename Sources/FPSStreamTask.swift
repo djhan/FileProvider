@@ -30,7 +30,8 @@ var lasttaskIdAssociated: Int {
 // codebeat:disable[TOTAL_LOC,TOO_MANY_IVARS]
 /// This class is a replica of NSURLSessionStreamTask with same api for iOS 7/8
 /// while it can actually fallback to NSURLSessionStreamTask in iOS 9.
-public class FileProviderStreamTask: URLSessionTask, StreamDelegate {
+public class FileProviderStreamTask: URLSessionTask, StreamDelegate,
+                                     @unchecked Sendable {
     fileprivate var inputStream: InputStream?
     fileprivate var outputStream: OutputStream?
     
