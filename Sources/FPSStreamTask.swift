@@ -5,7 +5,7 @@
 //  Created by Amir Abbas Mousavian.
 //  Copyright © 2016 Mousavian. Distributed under MIT license.
 //
-
+/*
 import Foundation
 
 private var _lasttaskIdAssociated = 1_000_000_000
@@ -1106,3 +1106,4 @@ private let ports: [String: Int] = ["http": 80, "https": 443, "smb": 445,"ftp": 
                                     "telnet": 23, "pop": 110, "smtp": 25, "imap": 143]
 private let securePorts: [String: Int] =  ["ssh": 22, "https": 443, "smb": 445, "smtp": 465,
                                            "ftps": 990,"telnet": 992, "imap": 993, "pop": 995]
+*/

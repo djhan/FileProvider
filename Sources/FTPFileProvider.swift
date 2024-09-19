@@ -6,13 +6,14 @@
 //  Copyright © 2017 Mousavian. Distributed under MIT license.
 //
 import Foundation
-import CommonLibrary
+//import CommonLibrary
 
 /**
  Allows accessing to FTP files and directories. This provider doesn't cache or save files internally.
  It's a complete reimplementation and doesn't use CFNetwork deprecated API.
  */
-open class FTPFileProvider: NSObject, FileProviderBasicRemote, FileProviderOperations, FileProviderReadWrite, FileProviderReadWriteProgressive {
+open class FTPFileProvider: NSObject {
+                                     //, FileProviderBasicRemote, FileProviderOperations, FileProviderReadWrite, FileProviderReadWriteProgressive {
     
     /// FTP data connection mode.
     public enum Mode: String {
@@ -26,6 +27,8 @@ open class FTPFileProvider: NSObject, FileProviderBasicRemote, FileProviderOpera
         case extendedPassive
     }
     
+    open var credential: URLCredential?
+   /*
     open class var type: String { return "FTP" }
     public let baseURL: URL?
     
@@ -1483,10 +1486,12 @@ extension FTPFileProvider {
             })
         })
     }
+    */
 }
-
+/*
 extension FTPFileProvider: FileProvider { }
 
 #if os(macOS) || os(iOS) || os(tvOS)
 extension FTPFileProvider: FileProvideUndoable { }
 #endif
+*/

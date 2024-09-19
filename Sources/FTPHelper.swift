@@ -6,7 +6,7 @@
 //  Copyright © 2017 Mousavian. Distributed under MIT license.
 //
 import Foundation
-
+/*
 internal extension FTPFileProvider {
     func execute(command: String, on task: FileProviderStreamTask, minLength: Int = 4,
                  afterSend: ((_ error: Error?) -> Void)? = nil,
@@ -1380,7 +1380,7 @@ internal extension FTPFileProvider {
         return file
     }
 }
-
+*/
 /// Contains error code and description returned by FTP/S provider.
 public struct FileProviderFTPError: LocalizedError {
     

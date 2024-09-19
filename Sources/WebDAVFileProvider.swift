@@ -268,21 +268,18 @@ open class WebDAVFileProvider: HTTPFileProvider, FileProviderSharing {
         progress.setUserInfoObject(url, forKey: .fileURLKey)
         
         let queryIsTruePredicate = query.predicateFormat == "TRUEPREDICATE"
-        let task = session.dataTask(with: request) { [weak self] (data, response, error) in
-            
-            guard let strongSelf = self else {
-                // self가 nil인 경우
-                completionHandler([], nil)
-                return
-            }
-            
+        
+        //-------------------------------------------------------------------------------------------//
+        /// 실제 재귀적 검색을 실행하는 내부 메쏘드
+        /// - 2024/09/19 추가. Xcode 16의 swift6 에러 메시지 제거 목적
+        func doSearchFile(_ data: Data?, _ response: URLResponse?, _ error: Error?) {
             // FIXME: paginating results
             var responseError: FileProviderHTTPError?
             if let code = (response as? HTTPURLResponse)?.statusCode , code >= 300, let rCode = FileProviderHTTPErrorCode(rawValue: code) {
                 
                 // 재귀적 검색시 에러가 발생한 경우인지 확인
                 if recursive == true {
-                    let childProgress = strongSelf.searchFilesRecursively(path: path, query: query, including: including, foundItemHandler: foundItemHandler, completionHandler: completionHandler)
+                    let childProgress = self.searchFilesRecursively(path: path, query: query, including: including, foundItemHandler: foundItemHandler, completionHandler: completionHandler)
                     if childProgress != nil {
                         progress.addChild(childProgress!, withPendingUnitCount: 1)
                         progress.totalUnitCount += 1
@@ -291,14 +288,14 @@ open class WebDAVFileProvider: HTTPFileProvider, FileProviderSharing {
                 }
 
                 // 재귀적 검색이 아닌 경우 에러 처리
-                responseError = strongSelf.serverError(with: rCode, path: path, data: data)
+                responseError = self.serverError(with: rCode, path: path, data: data)
             }
             guard let data = data else {
                 completionHandler([], responseError ?? error)
                 return
             }
             
-            let xresponse = DavResponse.parse(xmlResponse: data, baseURL: strongSelf.baseURL)
+            let xresponse = DavResponse.parse(xmlResponse: data, baseURL: self.baseURL)
             var fileObjects = [WebDavFileObject]()
             
             progress.totalUnitCount = xresponse.reduce(Int64(0), { partialResult, response in
@@ -322,6 +319,11 @@ open class WebDAVFileProvider: HTTPFileProvider, FileProviderSharing {
                 foundItemHandler?(fileObject)
             }
             completionHandler(fileObjects, responseError ?? error)
+        }
+        //-------------------------------------------------------------------------------------------//
+        
+        let task = session.dataTask(with: request) { (data, response, error) in
+            doSearchFile(data, response, error)
         }
         progress.cancellationHandler = { [weak task] in
             task?.cancel()
