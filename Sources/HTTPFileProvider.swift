@@ -507,6 +507,7 @@ open class HTTPFileProvider: NSObject,
         let task = session.dataTask(with: request, completionHandler: { (data, response, error) in
             do {
                 if let error = error {
+                    EdgeLogger.shared.networkLogger.error("Error occurred while fetching files: \(error.localizedDescription)")
                     throw error
                 }
                 if let code = (response as? HTTPURLResponse)?.statusCode , code >= 300, let rCode = FileProviderHTTPErrorCode(rawValue: code) {
@@ -515,6 +516,7 @@ open class HTTPFileProvider: NSObject,
                 
                 let (newFiles, err, newToken) = pageHandler(data, progress)
                 if let error = err {
+                    EdgeLogger.shared.networkLogger.error("Error occurred while fetching files: \(error.localizedDescription)")
                     throw error
                 }
                 
@@ -525,6 +527,7 @@ open class HTTPFileProvider: NSObject,
                     completionHandler(files, nil)
                 }
             } catch {
+                EdgeLogger.shared.networkLogger.error("Error occurred while fetching files: \(error.localizedDescription)")
                 completionHandler(previousResult, error)
             }
         })
@@ -965,23 +968,14 @@ class HTTPDownloadOperation: DefaultAsynchronousOperation,
         }
         
         provider.attributesOfItem(path: path) { [weak self] attributes, error in
-            
             if let error = error {
-                if #available(macOS 11.0, *) {
-                    EdgeLogger.shared.networkLogger.log(level: .error, "\(#function) :: 에러 발생 = \(error.localizedDescription)")
-                } else {
-                    // Fallback on earlier versions
-                }
+                EdgeLogger.shared.networkLogger.log(level: .error, "\(#function) :: 에러 발생 = \(error.localizedDescription)")
                 self?.finishWork(error)
                 return
             }
             guard let strongSelf = self,
                   let size = attributes?.size else {
-                if #available(macOS 11.0, *) {
-                    EdgeLogger.shared.networkLogger.log(level: .debug, "\(#function) :: 파일 크기를 구할 수 없음, 중지.")
-                } else {
-                    // Fallback on earlier versions
-                }
+                EdgeLogger.shared.networkLogger.log(level: .debug, "\(#function) :: 파일 크기를 구할 수 없음, 중지.")
                 self?.finishWork(HTTP.Error.receive)
                 return
             }
@@ -1036,11 +1030,7 @@ class HTTPDownloadOperation: DefaultAsynchronousOperation,
                 
                 let result = (try? stream.write(data: data)) ?? -1
                 if result < 0 {
-                    if #available(macOS 11.0, *) {
-                        EdgeLogger.shared.networkLogger.log(level: .debug, "\(#function) :: 작업 취소 처리.")
-                    } else {
-                        // Fallback on earlier versions
-                    }
+                    EdgeLogger.shared.networkLogger.log(level: .debug, "\(#function) :: 작업 취소 처리.")
                     strongSelf.completionHandler(stream.streamError)
                     provider.delegateNotify(strongSelf.operation, error: stream.streamError)
                     task.cancel()
@@ -1057,19 +1047,11 @@ class HTTPDownloadOperation: DefaultAsynchronousOperation,
                     
                     if let error = error {
                         strongSelf.progress?.cancel()
-                        if #available(macOS 11.0, *) {
-                            EdgeLogger.shared.networkLogger.log(level: .error, "\(#function) :: 에러 발생 = \(error.localizedDescription).")
-                        } else {
-                            // Fallback on earlier versions
-                        }
+                        EdgeLogger.shared.networkLogger.log(level: .error, "\(#function) :: 에러 발생 = \(error.localizedDescription).")
                     }
                     strongSelf.stream?.close()
                     
-                    if #available(macOS 11.0, *) {
-                        EdgeLogger.shared.networkLogger.log(level: .debug, "\(#function) :: 다운로드 종료 처리.")
-                    } else {
-                        // Fallback on earlier versions
-                    }
+                    EdgeLogger.shared.networkLogger.log(level: .debug, "\(#function) :: 다운로드 종료 처리.")
                     strongSelf.completionHandler(error)
                     strongSelf.provider?.delegateNotify(strongSelf.operation, error: error)
                     // 작업 종료
