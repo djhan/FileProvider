@@ -51,6 +51,7 @@ open class HTTPFileProvider: NSObject,
     
     /// 작업 큐
     /// - 동시작업 큐 개수는 1개로 제한
+    //public var workQueue: CountableOperationQueue? = CountableOperationQueue.init(withWorkCount: 1)
     public var workQueue: CountableOperationQueue? = CountableOperationQueue.init(withWorkCount: 1)
     /// 큐 등록 가능 여부
     public var allowRegisterSerialWork = true
