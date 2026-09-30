@@ -10,16 +10,11 @@
 import Foundation
 import ImageIO
 import CoreGraphics
-import AVFoundation
 
 extension LocalFileProvider: ExtendedFileProvider {
     public func thumbnailOfFileSupported(path: String) -> Bool {
         switch path.pathExtension.lowercased() {
         case LocalFileInformationGenerator.imageThumbnailExtensions.contains:
-            return true
-        case LocalFileInformationGenerator.audioThumbnailExtensions.contains:
-            return true
-        case LocalFileInformationGenerator.videoThumbnailExtensions.contains:
             return true
         case LocalFileInformationGenerator.pdfThumbnailExtensions.contains:
             return true
@@ -37,10 +32,6 @@ extension LocalFileProvider: ExtendedFileProvider {
         switch fileExt {
         case LocalFileInformationGenerator.imagePropertiesExtensions.contains:
             return LocalFileInformationGenerator.imageProperties != nil
-        case LocalFileInformationGenerator.audioPropertiesExtensions.contains:
-            return LocalFileInformationGenerator.audioProperties != nil
-        case LocalFileInformationGenerator.videoPropertiesExtensions.contains:
-            return LocalFileInformationGenerator.videoProperties != nil
         case LocalFileInformationGenerator.pdfPropertiesExtensions.contains:
             return LocalFileInformationGenerator.pdfProperties != nil
         case LocalFileInformationGenerator.archivePropertiesExtensions.contains:
@@ -64,10 +55,6 @@ extension LocalFileProvider: ExtendedFileProvider {
             let fileURL = self.url(of: path)
             // Create Thumbnail and cache
             switch fileURL.pathExtension.lowercased() {
-            case LocalFileInformationGenerator.videoThumbnailExtensions.contains:
-                thumbnailImage = LocalFileInformationGenerator.videoThumbnail(fileURL, dimension)
-            case LocalFileInformationGenerator.audioThumbnailExtensions.contains:
-                thumbnailImage = LocalFileInformationGenerator.audioThumbnail(fileURL, dimension)
             case LocalFileInformationGenerator.imageThumbnailExtensions.contains:
                 thumbnailImage = LocalFileInformationGenerator.imageThumbnail(fileURL, dimension)
             case LocalFileInformationGenerator.pdfThumbnailExtensions.contains:
@@ -94,10 +81,6 @@ extension LocalFileProvider: ExtendedFileProvider {
             switch fileExt {
             case LocalFileInformationGenerator.imagePropertiesExtensions.contains:
                 getter = LocalFileInformationGenerator.imageProperties
-             case LocalFileInformationGenerator.audioPropertiesExtensions.contains:
-                getter = LocalFileInformationGenerator.audioProperties
-            case LocalFileInformationGenerator.videoPropertiesExtensions.contains:
-                getter = LocalFileInformationGenerator.videoProperties
             case LocalFileInformationGenerator.pdfPropertiesExtensions.contains:
                 getter = LocalFileInformationGenerator.pdfProperties
             case LocalFileInformationGenerator.archivePropertiesExtensions.contains:
@@ -129,16 +112,6 @@ public struct LocalFileInformationGenerator {
     /// Default: `["jpg", "jpeg", "gif", "bmp", "png", "tif", "tiff", "ico"]`
     static public var imageThumbnailExtensions: [String]  = ["heic", "jpg", "jpeg", "gif", "bmp", "png", "tif", "tiff", "ico"]
     
-    /// Audio and music extensions supportes for thumbnail.
-    ///
-    /// Default: `["mp1", "mp2", "mp3", "mpa", "mpga", "m1a", "m2a", "m4a", "m4b", "m4p", "m4r", "aac", "snd", "caf", "aa", "aax", "adts", "aif", "aifc", "aiff", "au", "flac", "amr", "wav", "wave", "bwf", "ac3", "eac3", "ec3", "cdda"]`
-    static public var audioThumbnailExtensions: [String]  = ["mp1", "mp2", "mp3", "mpa", "mpga", "m1a", "m2a", "m4a", "m4b", "m4p", "m4r", "aac", "snd", "caf", "aa", "aax", "adts", "aif", "aifc", "aiff", "au", "flac", "amr", "wav", "wave", "bwf", "ac3", "eac3", "ec3", "cdda"]
-    
-    /// Video extensions supportes for thumbnail.
-    ///
-    /// Default: `["mov", "mp4", "mpg4", "m4v", "mqv", "mpg", "mpeg", "avi", "vfw", "3g2", "3gp", "3gp2", "3gpp", "qt"]`
-    static public var videoThumbnailExtensions: [String]  = ["mov", "mp4", "mpg4", "m4v", "mqv", "mpg", "mpeg", "avi", "vfw", "3g2", "3gp", "3gp2", "3gpp", "qt"]
-
     /// Portable document file extensions supportes for thumbnail.
     ///
     /// Default: `["pdf"]`
@@ -159,16 +132,6 @@ public struct LocalFileInformationGenerator {
     ///
     /// Default: `["jpg", "jpeg", "gif", "bmp", "png", "tif", "tiff"]`
     static public var imagePropertiesExtensions: [String]   = ["heic", "jpg", "jpeg", "bmp", "gif", "png", "tif", "tiff"]
-    
-    /// Audio and music extensions supportes for properties.
-    ///
-    /// Default: `["mp1", "mp2", "mp3", "mpa", "mpga", "m1a", "m2a", "m4a", "m4b", "m4p", "m4r", "aac", "snd", "caf", "aa", "aax", "adts", "aif", "aifc", "aiff", "au", "flac", "amr", "wav", "wave", "bwf", "ac3", "eac3", "ec3", "cdda"]`
-    static public var audioPropertiesExtensions: [String]   = ["mp1", "mp2", "mp3", "mpa", "mpga", "m1a", "m2a", "m4a", "m4b", "m4p", "m4r", "aac", "snd", "caf", "aa", "aax", "adts", "aif", "aifc", "aiff", "au", "flac", "amr", "wav", "wave", "bwf", "ac3", "eac3", "ec3", "cdda"]
-    
-    /// Video extensions supportes for properties.
-    ///
-    /// Default: `["mov", "mp4", "mpg4", "m4v", "mqv", "mpg", "mpeg", "avi", "vfw", "3g2", "3gp", "3gp2", "3gpp", "qt"]`
-    static public var videoPropertiesExtensions: [String]   = ["mov", "mp4", "mpg4", "m4v", "mqv", "mpg", "mpeg", "avi", "vfw", "3g2", "3gp", "3gp2", "3gpp", "qt"]
     
     /// Portable document file extensions supportes for properties.
     ///
@@ -193,38 +156,6 @@ public struct LocalFileInformationGenerator {
     /// Thumbnail generator closure for image files.
     static public var imageThumbnail: (_ fileURL: URL, _ dimension: CGSize?) -> ImageClass? = { fileURL, dimension in
         return LocalFileProvider.scaleDown(fileURL: fileURL, toSize: dimension)
-    }
-    
-    /// Thumbnail generator closure for audio and music files.
-    static public var audioThumbnail: (_ fileURL: URL, _ dimension: CGSize?) -> ImageClass? = { fileURL, dimension in
-        let playerItem = AVPlayerItem(url: fileURL)
-        let metadataList = playerItem.asset.commonMetadata
-        let commonKeyArtwork = AVMetadataKey.commonKeyArtwork
-        for item in metadataList {
-            if item.commonKey == commonKeyArtwork {
-                if let data = item.dataValue {
-                    return LocalFileProvider.scaleDown(data: data, toSize: dimension)
-                }
-            }
-        }
-        return nil
-    }
-    
-    /// Thumbnail generator closure for video files.
-    static public var videoThumbnail: (_ fileURL: URL, _ dimension: CGSize?) -> ImageClass? = { fileURL, dimension in
-        let asset = AVAsset(url: fileURL)
-        let assetImgGenerate = AVAssetImageGenerator(asset: asset)
-        assetImgGenerate.maximumSize = dimension ?? .zero
-        assetImgGenerate.appliesPreferredTrackTransform = true
-        let time = CMTime(value: asset.duration.value / 3, timescale: asset.duration.timescale)
-        if let cgImage = try? assetImgGenerate.copyCGImage(at: time, actualTime: nil) {
-            #if os(macOS)
-            return ImageClass(cgImage: cgImage, size: .zero)
-            #else
-            return ImageClass(cgImage: cgImage)
-            #endif
-        }
-        return nil
     }
     
     /// Thumbnail generator closure for portable document files files.
@@ -308,124 +239,6 @@ public struct LocalFileInformationGenerator {
             add(key: "Exposure time", value: "\(expfrac.newTop)/\(expfrac.newBottom)")
         }
         add(key: "ISO speed", value: (exifDict[kCGImagePropertyExifISOSpeedRatings as String] as? [NSNumber])?.first)
-        return (dic, keys)
-    }
-    
-    /// Properties generator closure for audio and music files.
-    static var audioProperties: ((_ fileURL: URL) -> (prop: [String: Any], keys: [String]))? = { fileURL in
-        var dic = [String: Any]()
-        var keys = [String]()
-        
-        func add(key: String, value: Any?) {
-            if let value = value {
-                keys.append(key)
-                dic[key] = value
-            }
-        }
-        
-        func makeKeyDescription(_ key: String?) -> String? {
-            guard let key = key else {
-                return nil
-            }
-            guard let regex = try? NSRegularExpression(pattern: "([a-z])([A-Z])" , options: []) else {
-                return nil
-            }
-            let newKey = regex.stringByReplacingMatches(in: key, options: [], range: NSRange(location: 0, length: (key as NSString).length) , withTemplate: "$1 $2")
-            return newKey.capitalized
-        }
-        
-        func parseLocationData(_ value: String) -> (latitude: Double, longitude: Double, height: Double?)? {
-            let scanner = Scanner.init(string: value)
-            //var latitude: Double = 0.0, longitude: Double = 0.0, height: Double = 0
-            let latitude = scanner.scanDouble()
-            let longitude = scanner.scanDouble()
-            if latitude != nil, longitude != nil {
-                let height = scanner.scanDouble()
-                if height != nil {
-                    return (latitude!, longitude!, height!)
-                }
-                return nil
-            //if scanner.scanDouble(&latitude), scanner.scanDouble(&longitude) {
-                //scanner.scanDouble(&height)
-                //return (latitude, longitude, height)
-            } else {
-                return nil
-            }
-        }
-        
-        guard fileURL.fileExists else {
-            return (dic, keys)
-        }
-        let playerItem = AVPlayerItem(url: fileURL)
-        let metadataList = playerItem.asset.commonMetadata
-        for item in metadataList {
-            let commonKey = item.commonKey?.rawValue
-            if let key = makeKeyDescription(commonKey) {
-                if commonKey == "location", let value = item.stringValue, let loc = parseLocationData(value) {
-                    keys.append(key)
-                    let heightStr: String = (loc.height as NSNumber?).map({ ", \($0.format(precision: 0))m" }) ?? ""
-                    dic[key] = "\((loc.latitude as NSNumber).format())°, \((loc.longitude as NSNumber).format())°\(heightStr)"
-                } else if let value = item.dateValue {
-                    keys.append(key)
-                    dic[key] = value
-                } else if let value = item.numberValue {
-                    keys.append(key)
-                    dic[key] = value
-                } else if let value = item.stringValue {
-                    keys.append(key)
-                    dic[key] = value
-                }
-            }
-        }
-        if let ap = try? AVAudioPlayer(contentsOf: fileURL) {
-            add(key: "Duration", value: ap.duration.formatshort)
-            add(key: "Bitrate", value: ap.settings[AVSampleRateKey] as? Int)
-        }
-        return (dic, keys)
-    }
-    
-    /// Properties generator closure for video files.
-    static public var videoProperties: ((_ fileURL: URL) -> (prop: [String: Any], keys: [String]))? = { fileURL in
-        var dic = [String: Any]()
-        var keys = [String]()
-        
-        func add(key: String, value: Any?) {
-            if let value = value {
-                keys.append(key)
-                dic[key] = value
-            }
-        }
-        
-        if let audioprops = LocalFileInformationGenerator.audioProperties?(fileURL) {
-            dic = audioprops.prop
-            keys = audioprops.keys
-            dic.removeValue(forKey: "Duration")
-            if let index = keys.firstIndex(of: "Duration") {
-                keys.remove(at: index)
-            }
-        }
-        let asset = AVURLAsset(url: fileURL, options: nil)
-        let videoTracks = asset.tracks(withMediaType: AVMediaType.video)
-        if let videoTrack = videoTracks.first {
-            var bitrate: Float = 0
-            let width = Int(videoTrack.naturalSize.width)
-            let height = Int(videoTrack.naturalSize.height)
-            add(key: "Dimensions", value: "\(width)x\(height)")
-            var duration: Int64 = 0
-            for track in videoTracks {
-                duration += track.timeRange.duration.timescale > 0 ? track.timeRange.duration.value / Int64(track.timeRange.duration.timescale) : 0
-                bitrate += track.estimatedDataRate
-            }
-            add(key: "Duration", value: TimeInterval(duration).formatshort)
-            add(key: "Video Bitrate", value: "\(Int(ceil(bitrate / 1000))) kbps")
-        }
-        let audioTracks = asset.tracks(withMediaType: AVMediaType.audio)
-        // dic["Audio channels"] = audioTracks.count
-        var bitrate: Float = 0
-        for track in audioTracks {
-            bitrate += track.estimatedDataRate
-        }
-        add(key: "Audio Bitrate", value: "\(Int(ceil(bitrate / 1000))) kbps")
         return (dic, keys)
     }
     

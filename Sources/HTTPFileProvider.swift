@@ -624,11 +624,43 @@ open class HTTPFileProvider: NSObject,
         return progress
     }
     
+    /// 완료 핸들러가 한 번만 호출되도록 감싼 클로저를 반환한다.
+    ///
+    /// - Parameters:
+    ///   - completionHandler: 한 번만 호출되어야 하는 완료 핸들러.
+    ///
+    /// - Returns: 여러 번, 여러 쓰레드에서 호출되어도 `completionHandler`를 최초 1회만 실행하는 클로저.
+    ///
+    /// - Note: 다운로드 작업은 작업 등록 거부, 스트림 쓰기 실패 후 취소 등 여러 경로에서 완료 핸들러를 호출하기 때문에,
+    /// 호출자에게 완료가 중복 전달되는 것을 막는 데 사용한다.
+    ///
+    /// # 예제
+    /// ```swift
+    /// let completionHandler = HTTPFileProvider.onceOnly(completionHandler)
+    /// completionHandler(nil)      // 실행
+    /// completionHandler(error)    // 무시
+    /// ```
+    internal static func onceOnly(_ completionHandler: @escaping (_ error: Error?) -> Void) -> (_ error: Error?) -> Void {
+        let lock = NSLock()
+        var isCalled = false
+        return { error in
+            lock.lock()
+            let isAlreadyCalled = isCalled
+            isCalled = true
+            lock.unlock()
+            guard isAlreadyCalled == false else { return }
+            completionHandler(error)
+        }
+    }
+
     internal func download(path: String, request: URLRequest, operation: FileOperationType,
                            offset: Int64 = 0,
                            responseHandler: ((_ response: URLResponse) -> Void)? = nil,
                            stream: OutputStream,
                            completionHandler: @escaping (_ error: Error?) -> Void) -> Progress? {
+        // 작업 등록 거부, 스트림 쓰기 실패 후 취소 등으로 완료 핸들러가 중복 호출되지 않도록 한 번만 호출되게 감싼다
+        let completionHandler = HTTPFileProvider.onceOnly(completionHandler)
+
         let progress = Progress(totalUnitCount: -1)
         progress.setUserInfoObject(operation, forKey: .fileProvderOperationTypeKey)
         progress.kind = .file
@@ -968,7 +1000,7 @@ class HTTPDownloadOperation: DefaultAsynchronousOperation,
             return
         }
         
-        provider.attributesOfItem(path: path) { [weak self] attributes, error in
+        provider.attributesOfItem(path: path) { [weak self, provider, stream] attributes, error in
             if let error = error {
                 EdgeLogger.shared.networkLogger.log(level: .error, "\(#function) :: 에러 발생 = \(error.localizedDescription)")
                 self?.finishWork(error)
@@ -1032,14 +1064,16 @@ class HTTPDownloadOperation: DefaultAsynchronousOperation,
                 let result = (try? stream.write(data: data)) ?? -1
                 if result < 0 {
                     EdgeLogger.shared.networkLogger.log(level: .debug, "\(#function) :: 작업 취소 처리.")
-                    strongSelf.completionHandler(stream.streamError)
-                    provider.delegateNotify(strongSelf.operation, error: stream.streamError)
+                    // streamError 가 nil 이어도 쓰기 실패가 성공으로 전달되지 않도록, write(data:) 와 동일한 기본 에러를 사용한다
+                    let writeError = stream.streamError ?? POSIXError(.EIO)
+                    strongSelf.completionHandler(writeError)
+                    provider.delegateNotify(strongSelf.operation, error: writeError)
                     task.cancel()
                     strongSelf.finish()
                 }
                 
                 // 등록 완료
-            } completion: {
+            } completion: { [task] in
                 registerCompletionHandlersForTasks(session: sessionDescription, task: task.taskIdentifier) { [weak self] error in
                     guard let strongSelf = self else {
                         self?.finishWork(HTTP.Error.unknown)
@@ -1099,8 +1133,8 @@ class HTTPDownloadOperation: DefaultAsynchronousOperation,
             return
         }
         
-        provider.attributesOfItem(path: path) { [weak self] attributes, error in
-            
+        provider.attributesOfItem(path: path) { [weak self, provider] attributes, error in
+
             if let error = error {
                 if #available(macOS 11.0, *) {
                     EdgeLogger.shared.networkLogger.log(level: .error, "\(#function) :: 에러 발생 = \(error.localizedDescription).")
@@ -1169,7 +1203,7 @@ class HTTPDownloadOperation: DefaultAsynchronousOperation,
                 strongSelf.progressHandler?(data)
                 
                 // 등록 완료
-            } completion: {
+            } completion: { [task] in
                 registerCompletionHandlersForTasks(session: sessionDescription, task: task.taskIdentifier) { [weak self] error in
                     guard let strongSelf = self else {
                         self?.finishWork(HTTP.Error.unknown)

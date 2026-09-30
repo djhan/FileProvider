@@ -423,3 +423,74 @@ class FilesProviderTests: XCTestCase, FileProviderDelegate {
     }
 }
 */
+
+import XCTest
+@testable import FilesProvider
+
+/// HTTP 다운로드 완료 핸들러가 중복 호출되지 않는지 확인하는 테스트
+/// - Note: 실제 서버가 필요 없도록, 연결이 거부되는 로컬 주소를 사용한다
+class HTTPDownloadCompletionTests: XCTestCase {
+
+    /// 연결이 거부되는 주소의 WebDAV provider 생성
+    private func makeUnreachableProvider() throws -> WebDAVFileProvider {
+        let unreachableURL = try XCTUnwrap(URL(string: "http://127.0.0.1:9/"))
+        return try XCTUnwrap(WebDAVFileProvider(baseURL: unreachableURL, credential: nil, credentialType: .basic))
+    }
+
+    /// 작업 등록이 거부된 상태에서 `contents(path:offset:length:)` 를 호출해도, 완료 핸들러는 한 번만 호출되어야 한다
+    func testCompletionIsCalledOnceWhenSerialWorkRegistrationIsRefused() throws {
+        let provider = try makeUnreachableProvider()
+        // 작업 등록 차단
+        provider.allowRegisterSerialWork = false
+
+        let lock = NSLock()
+        var completionCallCount = 0
+        let firstCompletion = expectation(description: "첫 번째 완료 핸들러 호출")
+
+        _ = provider.contents(path: "sample.bin", offset: 0, length: 16) { _, _ in
+            lock.lock()
+            completionCallCount += 1
+            let currentCallCount = completionCallCount
+            lock.unlock()
+            if currentCallCount == 1 {
+                firstCompletion.fulfill()
+            }
+        }
+        wait(for: [firstCompletion], timeout: 5)
+
+        // 등록이 거부된 작업이 뒤늦게 완료 핸들러를 다시 호출하는지 일정 시간 대기
+        let lateCompletionWindow = expectation(description: "뒤늦은 완료 핸들러 호출 대기")
+        lateCompletionWindow.isInverted = true
+        wait(for: [lateCompletionWindow], timeout: 5)
+
+        lock.lock()
+        let finalCallCount = completionCallCount
+        lock.unlock()
+        XCTAssertEqual(finalCallCount, 1, "완료 핸들러가 \(finalCallCount)번 호출됨")
+    }
+
+    /// `onceOnly` 로 감싼 핸들러는 여러 쓰레드에서 동시에 호출해도 최초 1회만 실행되어야 한다
+    func testOnceOnlyRunsHandlerExactlyOnce() {
+        let lock = NSLock()
+        var handlerCallCount = 0
+        var receivedErrors = [Error?]()
+        let completionHandler = HTTPFileProvider.onceOnly { error in
+            lock.lock()
+            handlerCallCount += 1
+            receivedErrors.append(error)
+            lock.unlock()
+        }
+
+        // 순차 호출: 첫 번째 값만 전달되어야 한다
+        completionHandler(nil)
+        completionHandler(URLError(.cancelled))
+        // 동시 호출
+        DispatchQueue.concurrentPerform(iterations: 1000) { _ in
+            completionHandler(URLError(.unknown))
+        }
+
+        XCTAssertEqual(handlerCallCount, 1)
+        XCTAssertEqual(receivedErrors.count, 1)
+        XCTAssertNil(receivedErrors.first ?? URLError(.unknown))
+    }
+}
